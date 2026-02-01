@@ -1,4 +1,4 @@
-import { defineConfig } from '@prisma/sdk'; // Note: In some versions it might be different, let's use the standard export format
+import 'dotenv/config';
 
 export default {
     datasource: {
