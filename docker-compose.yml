@@ -3,27 +3,5 @@ services:
     build: .
     ports:
       - "5000:5000"
-    environment:
-      - DATABASE_URL=postgresql://user:password@db:5432/proproven?schema=public
-    depends_on:
-      db:
-        condition: service_healthy
-
-  db:
-    image: postgres:15-alpine
-    environment:
-      - POSTGRES_USER=user
-      - POSTGRES_PASSWORD=password
-      - POSTGRES_DB=proproven
-    ports:
-      - "5432:5432"
-    healthcheck:
-      test: [ "CMD-SHELL", "pg_isready -U user -d proproven" ]
-      interval: 10s
-      timeout: 5s
-      retries: 5
-    volumes:
-      - postgres_data:/var/lib/postgresql/data
-
-volumes:
-  postgres_data:
+    env_file:
+      - .env
