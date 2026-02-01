@@ -1,0 +1,83 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+// 🏫 Professor's Tip: Use Enums for fixed sets of values. 
+// This prevents typos like "Admin" vs "admin" in your database.
+enum Role {
+  CLIENT
+  PROFESSIONAL
+  ADMIN
+}
+
+enum ProfessionalCategory {
+  SOFTWARE_DEVELOPER
+  PROJECT_MANAGER
+  PRODUCT_DESIGNER
+  GRAPHIC_DESIGNER
+  CONTENT_CREATOR
+  DIGITAL_MARKETER
+  ACCOUNTANT
+  VIDEO_EDITOR
+  SOCIAL_MEDIA_MANAGER
+  LAWYER
+  HR_SPECIALIST
+  DATA_ANALYST
+}
+
+enum VettingStatus {
+  PENDING
+  VETTED
+  REJECTED
+}
+
+model User {
+  id            String    @id @default(cuid())
+  email         String    @unique
+  username      String?
+  password      String
+  role          Role      @default(CLIENT)
+  phone         String?
+  isVerified    Boolean   @default(false)
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+  otps          OTP[]
+  profile       Profile?
+}
+
+model Profile {
+  id              String                @id @default(cuid())
+  userId          String                @unique
+  user            User                  @relation(fields: [userId], references: [id])
+  firstName       String?
+  lastName        String?
+  bio             String?
+  avatarUrl       String?
+  
+  // 🔍 Professional specific fields
+  category        ProfessionalCategory?
+  vettingStatus   VettingStatus         @default(PENDING)
+  onboardingComplete Boolean            @default(false)
+  
+  // 🏫 Professor's Tip: "JSONB" power.
+  // metadata stores category-specific data (e.g., GitHub for devs).
+  // verificationData stores the proof/links submitted for vetting.
+  metadata        Json?                 @default("{}")
+  verificationData Json?                @default("{}")
+}
+
+model OTP {
+  id        String   @id @default(cuid())
+  code      String
+  userId    String
+  user      User     @relation(fields: [userId], references: [id])
+  expiresAt DateTime
+  createdAt DateTime @default(now())
+}
