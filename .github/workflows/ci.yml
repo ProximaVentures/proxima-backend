@@ -1,0 +1,44 @@
+name: ProProven Backend CI/CD
+
+on:
+  push:
+    branches: [ master, feat/* ]
+  pull_request:
+    branches: [ master ]
+
+jobs:
+  build-and-test:
+    runs-on: ubuntu-latest
+
+    services:
+      # We could spin up a test database here if we had automated tests
+      # postgres:
+      #   image: postgres:15-alpine
+      #   env:
+      #     POSTGRES_PASSWORD: password
+
+    steps:
+      - name: 📥 Checkout Code
+        uses: actions/checkout@v4
+
+      - name: 🟢 Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - name: 📦 Install Dependencies
+        run: npm install
+
+      - name: 💎 Validate Prisma Schema
+        run: npx prisma validate
+
+      - name: 🏗️ Run Type Check & Build
+        run: npm run build
+
+      # 🏫 Professor's Tip: GitHub Actions runs on Linux, so it won't have the 
+      # OneDrive file-locking issue we faced on Windows. This is the ultimate test!
+      - name: 🐋 Verify Docker Build
+        run: docker build -t proproven-backend:latest .
+
+  # We can add a "deploy" job here later once we've picked a hosting provider (like Render, AWS, or Vercel)
