@@ -56,4 +56,8 @@ export const professionalProfileSchema = z.discriminatedUnion('category', [
     // 🏫 Professor's Tip: You would add the rest of the 12 categories here 
     // following the same pattern. 
 ]);
+export const loginSchema = z.object({
+    email: z.string().email(),
+    password: z.string().min(8),
+});
 //# sourceMappingURL=auth.validator.js.map

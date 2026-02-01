@@ -1,9 +1,15 @@
+import 'dotenv/config';
 import { PrismaClient } from '@prisma/client';
+import { PrismaPg } from '@prisma/adapter-pg';
+import pg from 'pg';
 
-// 🏫 Professor's Tip: Use a Singleton pattern for the DB client.
-// This prevents creating too many connections to the database,
-// especially in serverless environments like Neon/Vercel.
+// 🏫 Professor's Tip: Using the standard 'pg' adapter is the most 
+// compatible way to connect to PostgreSQL (including Neon) from Node.js.
+const connectionString = process.env.DATABASE_URL;
 
-const prisma = new PrismaClient();
+const pool = new pg.Pool({ connectionString });
+const adapter = new PrismaPg(pool);
+
+const prisma = new PrismaClient({ adapter });
 
 export default prisma;

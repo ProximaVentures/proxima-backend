@@ -64,5 +64,11 @@ export const professionalProfileSchema = z.discriminatedUnion('category', [
     // following the same pattern. 
 ]);
 
+export const loginSchema = z.object({
+    email: z.string().email(),
+    password: z.string().min(8),
+});
+
 export type RegisterInput = z.infer<typeof registerSchema>;
 export type ProfessionalProfileInput = z.infer<typeof professionalProfileSchema>;
+export type LoginInput = z.infer<typeof loginSchema>;

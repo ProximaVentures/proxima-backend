@@ -29,6 +29,10 @@ app.use('/api/auth', authRoutes);
 // 🚨 ERROR HANDLING
 app.use(errorHandler);
 
-app.listen(PORT, () => {
-    console.log(`🚀 Master Professor's Server running on http://localhost:${PORT}`);
-});
+if (process.env.NODE_ENV !== 'test') {
+    app.listen(PORT, () => {
+        console.log(`🚀 Master Professor's Server running on http://localhost:${PORT}`);
+    });
+}
+
+export default app;

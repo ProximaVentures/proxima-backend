@@ -55,7 +55,7 @@ model User {
 model Profile {
   id              String                @id @default(cuid())
   userId          String                @unique
-  user            User                  @relation(fields: [userId], references: [id])
+  user            User                  @relation(fields: [userId], references: [id], onDelete: Cascade)
   firstName       String?
   lastName        String?
   bio             String?
@@ -77,7 +77,7 @@ model OTP {
   id        String   @id @default(cuid())
   code      String
   userId    String
-  user      User     @relation(fields: [userId], references: [id])
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
   expiresAt DateTime
   createdAt DateTime @default(now())
 }
