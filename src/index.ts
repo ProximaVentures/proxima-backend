@@ -8,6 +8,7 @@ import 'dotenv/config';
 // We'll create these files in the next sub-steps.
 import { errorHandler } from './middleware/error.middleware.js';
 import authRoutes from './routes/auth.routes.js';
+import profileRoutes from './routes/profile.routes.js';
 
 const app = express();
 const PORT = process.env.PORT || 5000;
@@ -25,6 +26,7 @@ app.get('/health', (req, res) => {
 
 // 🛣️ ROUTES
 app.use('/api/auth', authRoutes);
+app.use('/api/profile', profileRoutes);
 
 // 🚨 ERROR HANDLING
 app.use(errorHandler);
