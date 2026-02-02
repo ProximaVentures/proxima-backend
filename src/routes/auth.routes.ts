@@ -9,8 +9,7 @@ import {
 
 const router = Router();
 
-// 🏫 Professor's Tip: Use descriptive route names.
-// /auth/register vs /auth/signup (be consistent!)
+
 
 router.post(
     '/register',

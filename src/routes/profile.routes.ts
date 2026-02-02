@@ -4,13 +4,13 @@ import * as profileController from '../controllers/profile.controller.js';
 
 const router = Router();
 
-// 🔒 All routes here are protected
+// All routes here are protected
 router.use(protect);
 
-// 👤 Get Current User Profile
+// Get Current User Profile
 router.get('/me', profileController.getMe);
 
-// 🚧 This route requires onboarding to be complete
+// This route requires onboarding to be complete
 router.get('/dashboard', ensureOnboardingComplete, (req, res) => {
     res.status(200).json({
         success: true,

@@ -4,7 +4,7 @@ import type { AuthRequest } from '../interfaces/auth.interface.js';
 import prisma from '../utils/prisma.js';
 
 /**
- * 👤 Get Current User Profile
+ * Get Current User Profile
  */
 export const getMe = asyncHandler(async (req: AuthRequest, res: Response) => {
     if (!req.user?.id) {

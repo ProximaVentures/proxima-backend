@@ -9,7 +9,7 @@ datasource db {
   provider = "postgresql"
 }
 
-// 🏫 Professor's Tip: Use Enums for fixed sets of values. 
+// Professor's Tip: Use Enums for fixed sets of values. 
 // This prevents typos like "Admin" vs "admin" in your database.
 enum Role {
   CLIENT
@@ -61,12 +61,12 @@ model Profile {
   bio             String?
   avatarUrl       String?
   
-  // 🔍 Professional specific fields
+  // Professional specific fields
   category        ProfessionalCategory?
   vettingStatus   VettingStatus         @default(PENDING)
   onboardingComplete Boolean            @default(false)
   
-  // 🏫 Professor's Tip: "JSONB" power.
+  // Professor's Tip: "JSONB" power.
   // metadata stores category-specific data (e.g., GitHub for devs).
   // verificationData stores the proof/links submitted for vetting.
   metadata        Json?                 @default("{}")

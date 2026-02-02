@@ -8,7 +8,7 @@ import { generateOTP } from '../utils/otp.js';
 import type { RegisterInput, LoginInput } from '../validators/auth.validator.js';
 
 /**
- * 🔐 Register Controller (Stage 1)
+ * Register Controller (Stage 1)
  * Creates a basic user account, generates an OTP, and sends a verification email.
  */
 export const register = asyncHandler(async (req: Request<{}, {}, RegisterInput>, res: Response) => {
@@ -62,7 +62,7 @@ export const register = asyncHandler(async (req: Request<{}, {}, RegisterInput>,
 });
 
 /**
- * ✅ Verify OTP Controller
+ * Verify OTP Controller
  */
 export const verifyOTP = asyncHandler(async (req: Request, res: Response) => {
     const { email, code } = req.body;
@@ -96,7 +96,7 @@ export const verifyOTP = asyncHandler(async (req: Request, res: Response) => {
 });
 
 /**
- * 🔑 Login Controller
+ * Login Controller
  */
 export const login = asyncHandler(async (req: Request<{}, {}, LoginInput>, res: Response) => {
     const { email, password } = req.body;
@@ -142,7 +142,7 @@ export const login = asyncHandler(async (req: Request<{}, {}, LoginInput>, res: 
 });
 
 /**
- * 🔄 Resend OTP Controller
+ * Resend OTP Controller
  */
 export const resendOTP = asyncHandler(async (req: Request, res: Response) => {
     const { email } = req.body;
@@ -170,7 +170,7 @@ export const resendOTP = asyncHandler(async (req: Request, res: Response) => {
 });
 
 /**
- * 🔒 Profile Completion Controller (Stage 2)
+ * Profile Completion Controller (Stage 2)
  */
 export const completeProfile = asyncHandler(async (req: Request, res: Response) => {
     const { userId, category, metadata, firstName, lastName, bio } = req.body;
