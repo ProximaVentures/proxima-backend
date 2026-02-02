@@ -1,7 +1,7 @@
 import type { Response, NextFunction } from 'express';
 import jwt from 'jsonwebtoken';
 import { AppError } from './error.middleware.js';
-import { AuthRequest } from '../interfaces/auth.interface.js';
+import type { AuthRequest } from '../interfaces/auth.interface.js';
 import prisma from '../utils/prisma.js';
 import { Role } from '@prisma/client';
 
