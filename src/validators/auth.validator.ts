@@ -26,7 +26,7 @@ const BaseProfileSchema = z.object({
 });
 
 export const professionalProfileSchema = z.discriminatedUnion('category', [
-    // 💻 Software Developer Specifics
+    //  Software Developer Specifics
     z.object({
         category: z.literal('SOFTWARE_DEVELOPER'),
         ...BaseProfileSchema.shape,
@@ -38,7 +38,7 @@ export const professionalProfileSchema = z.discriminatedUnion('category', [
         }),
     }),
 
-    // 📈 Project Manager Specifics
+    //  Project Manager Specifics
     z.object({
         category: z.literal('PROJECT_MANAGER'),
         ...BaseProfileSchema.shape,
@@ -49,7 +49,7 @@ export const professionalProfileSchema = z.discriminatedUnion('category', [
         }),
     }),
 
-    // 🎨 Product Designer Specifics
+    //  Product Designer Specifics
     z.object({
         category: z.literal('PRODUCT_DESIGNER'),
         ...BaseProfileSchema.shape,
@@ -60,8 +60,7 @@ export const professionalProfileSchema = z.discriminatedUnion('category', [
         }),
     }),
 
-    // 🏫 Professor's Tip: You would add the rest of the 12 categories here 
-    // following the same pattern. 
+
 ]);
 
 export const loginSchema = z.object({

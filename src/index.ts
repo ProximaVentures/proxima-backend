@@ -9,6 +9,7 @@ import 'dotenv/config';
 import { errorHandler } from './middleware/error.middleware.js';
 import authRoutes from './routes/auth.routes.js';
 import profileRoutes from './routes/profile.routes.js';
+import { setupSwagger } from './utils/swagger.js';
 
 const app = express();
 const PORT = process.env.PORT || 5000;
@@ -34,6 +35,8 @@ app.use(errorHandler);
 if (process.env.NODE_ENV !== 'test') {
     app.listen(PORT, () => {
         console.log(`🚀 Master Professor's Server running on http://localhost:${PORT}`);
+        // Initialize Swagger
+        setupSwagger(app);
     });
 }
 
