@@ -13,7 +13,7 @@ interface JwtPayload {
 }
 
 /**
- * 🛡️ Protect Middleware
+ * Protect Middleware
  * Verifies the JWT and attaches the current user to the request.
  */
 export const protect = async (req: AuthRequest, res: Response, next: NextFunction) => {
@@ -60,7 +60,7 @@ export const protect = async (req: AuthRequest, res: Response, next: NextFunctio
 };
 
 /**
- * 👮 Authorize Middleware
+ * Authorize Middleware
  * Restricts access to specific roles.
  */
 export const authorize = (...roles: Role[]) => {
@@ -73,7 +73,7 @@ export const authorize = (...roles: Role[]) => {
 };
 
 /**
- * 🚧 Ensure Onboarding Complete Middleware
+ * Ensure Onboarding Complete Middleware
  * Blocks access if the professional hasn't completed their profile.
  */
 export const ensureOnboardingComplete = (req: AuthRequest, res: Response, next: NextFunction) => {

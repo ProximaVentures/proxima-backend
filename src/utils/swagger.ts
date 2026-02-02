@@ -1,7 +1,7 @@
 import type { Express, Request, Response } from 'express';
 import swaggerUi from 'swagger-ui-express';
 
-// 🏫 Professor's Tip: Ideally, you'd generate this automatically from Zod schemas
+// Professor's Tip: Ideally, you'd generate this automatically from Zod schemas
 // using a library like `zod-to-swagger` or `swagger-jsdoc`.
 // For manual setup, we define the basic structure here.
 
@@ -71,5 +71,5 @@ export const setupSwagger = (app: Express) => {
         res.send(swaggerDocument);
     });
 
-    console.log(`📑 Swagger Docs available at http://localhost:5000/api-docs`);
+    console.log(`Swagger Docs available at http://localhost:5000/api-docs`);
 };

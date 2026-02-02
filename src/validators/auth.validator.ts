@@ -1,6 +1,6 @@
 import { z } from 'zod';
 
-// 🏫 Professor's Tip: Use "Discriminated Unions" to handle different shapes of data
+// Professor's Tip: Use "Discriminated Unions" to handle different shapes of data
 // based on a single field (like 'role'). This is Type-Safety at its finest!
 
 /**
@@ -25,7 +25,7 @@ const BaseProfileSchema = z.object({
     bio: z.string().max(500).optional(),
 });
 
-// 🏆 Proof of Work Schema
+// Proof of Work Schema
 const ProjectSchema = z.object({
     name: z.string().min(3, "Project name is required"),
     description: z.string().min(20, "Description must be detailed (min 20 chars)"),
@@ -34,7 +34,7 @@ const ProjectSchema = z.object({
 });
 
 export const professionalProfileSchema = z.discriminatedUnion('category', [
-    // 💻 Software Developer (Strict)
+    // Software Developer (Strict)
     z.object({
         category: z.literal('SOFTWARE_DEVELOPER'),
         ...BaseProfileSchema.shape,
@@ -60,7 +60,7 @@ export const professionalProfileSchema = z.discriminatedUnion('category', [
         }),
     }),
 
-    // 📈 Project Manager
+    // Project Manager
     z.object({
         category: z.literal('PROJECT_MANAGER'),
         ...BaseProfileSchema.shape,
@@ -73,7 +73,7 @@ export const professionalProfileSchema = z.discriminatedUnion('category', [
         }),
     }),
 
-    // 🎨 Product Designer
+    // Product Designer
     z.object({
         category: z.literal('PRODUCT_DESIGNER'),
         ...BaseProfileSchema.shape,
@@ -86,7 +86,7 @@ export const professionalProfileSchema = z.discriminatedUnion('category', [
         }),
     }),
 
-    // 🖌️ Graphic Designer
+    // Graphic Designer
     z.object({
         category: z.literal('GRAPHIC_DESIGNER'),
         ...BaseProfileSchema.shape,
@@ -97,7 +97,7 @@ export const professionalProfileSchema = z.discriminatedUnion('category', [
         }),
     }),
 
-    // ✍️ Content Creator
+    // Content Creator
     z.object({
         category: z.literal('CONTENT_CREATOR'),
         ...BaseProfileSchema.shape,
@@ -119,7 +119,7 @@ export const professionalProfileSchema = z.discriminatedUnion('category', [
         }),
     }),
 
-    // 💰 Accountant
+    // Accountant
     z.object({
         category: z.literal('ACCOUNTANT'),
         ...BaseProfileSchema.shape,
@@ -131,7 +131,7 @@ export const professionalProfileSchema = z.discriminatedUnion('category', [
         }),
     }),
 
-    // 🎬 Video Editor
+    // Video Editor
     z.object({
         category: z.literal('VIDEO_EDITOR'),
         ...BaseProfileSchema.shape,
@@ -141,7 +141,7 @@ export const professionalProfileSchema = z.discriminatedUnion('category', [
         }),
     }),
 
-    // 📱 Social Media Manager
+    // Social Media Manager
     z.object({
         category: z.literal('SOCIAL_MEDIA_MANAGER'),
         ...BaseProfileSchema.shape,
@@ -151,7 +151,7 @@ export const professionalProfileSchema = z.discriminatedUnion('category', [
         }),
     }),
 
-    // ⚖️ Lawyer
+    // Lawyer
     z.object({
         category: z.literal('LAWYER'),
         ...BaseProfileSchema.shape,
@@ -163,7 +163,7 @@ export const professionalProfileSchema = z.discriminatedUnion('category', [
         }),
     }),
 
-    // 👥 HR Specialist
+    // HR Specialist
     z.object({
         category: z.literal('HR_SPECIALIST'),
         ...BaseProfileSchema.shape,
@@ -174,7 +174,7 @@ export const professionalProfileSchema = z.discriminatedUnion('category', [
         }),
     }),
 
-    // 📈 Data Analyst
+    // Data Analyst
     z.object({
         category: z.literal('DATA_ANALYST'),
         ...BaseProfileSchema.shape,
