@@ -33,8 +33,13 @@ router.post(
     authController.login
 );
 
+import { protect, authorize } from '../middleware/auth.middleware.js';
+import { Role } from '@prisma/client';
+
 router.post(
     '/complete-profile',
+    protect,
+    authorize(Role.PROFESSIONAL),
     validate(professionalProfileSchema),
     authController.completeProfile
 );

@@ -67,6 +67,7 @@ We need to create a new user who is a `PROFESSIONAL`.
 2.  Click the **Authorize** button (Lock icon).
 3.  In the "Value" box, type: `Bearer <YOUR_COPIED_TOKEN>`.
 4.  Click **Authorize**, then **Close**.
+    *   **CRITICAL**: Ensure the user you logged in with has the `PROFESSIONAL` role. If you logged in as a `CLIENT`, Step 5 will now correctly return `403 Forbidden`.
 
 ### Step 5: Test "Strict" Onboarding (The Fraud Check)
 Now, let's try to submit a profile.
@@ -74,7 +75,7 @@ Now, let's try to submit a profile.
 #### A. Fail Case (Missing Proof)
 1.  Locate `POST /api/auth/complete-profile`.
 2.  Click **Try it out**.
-3.  Enter a lazy payload (missing required fields):
+3.  Enter a lazy payload (missing required fields). *Note: This WILL fail validation.*
     ```json
     {
       "userId": "<ID_FROM_LOGIN>",
@@ -83,14 +84,13 @@ Now, let's try to submit a profile.
       "category": "SOFTWARE_DEVELOPER",
       "metadata": {
         "developerType": "FRONTEND"
-        // Missing github, resume, projects...
       }
     }
     ```
 4.  Click **Execute**.
-5.  **Expected Result**: `400 Bad Request`. The system should yell at you about missing keys.
+5.  **Expected Result**: `400 Bad Request`. The system should yell at you about missing keys (`githubUrl`, `resumeUrl`, `topProjects`, etc.).
 
-#### B. Success Case (Full Proof)
+#### B. Success Case (Full Proof - Valid JSON)
 1.  Update the payload with valid dummy data:
     ```json
     {
