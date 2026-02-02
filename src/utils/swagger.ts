@@ -27,6 +27,108 @@ const swaggerDocument = {
         },
     },
     paths: {
+        '/api/auth/register': {
+            post: {
+                summary: 'Register a new user',
+                tags: ['Authentication'],
+                requestBody: {
+                    required: true,
+                    content: {
+                        'application/json': {
+                            schema: {
+                                type: 'object',
+                                properties: {
+                                    email: { type: 'string', format: 'email' },
+                                    username: { type: 'string' },
+                                    password: { type: 'string', minLength: 8 },
+                                    role: { type: 'string', enum: ['CLIENT', 'PROFESSIONAL', 'ADMIN'] },
+                                    phone: { type: 'string' }
+                                },
+                                required: ['email', 'password', 'role']
+                            }
+                        }
+                    }
+                },
+                responses: {
+                    201: { description: 'User registered successfully' },
+                    400: { description: 'User already exists' }
+                }
+            }
+        },
+        '/api/auth/verify-otp': {
+            post: {
+                summary: 'Verify Email with OTP',
+                tags: ['Authentication'],
+                requestBody: {
+                    required: true,
+                    content: {
+                        'application/json': {
+                            schema: {
+                                type: 'object',
+                                properties: {
+                                    email: { type: 'string', format: 'email' },
+                                    code: { type: 'string' }
+                                },
+                                required: ['email', 'code']
+                            }
+                        }
+                    }
+                },
+                responses: {
+                    200: { description: 'Email verified successfully' },
+                    400: { description: 'Invalid OTP' }
+                }
+            }
+        },
+        '/api/auth/login': {
+            post: {
+                summary: 'Login User',
+                tags: ['Authentication'],
+                requestBody: {
+                    required: true,
+                    content: {
+                        'application/json': {
+                            schema: {
+                                type: 'object',
+                                properties: {
+                                    email: { type: 'string', format: 'email' },
+                                    password: { type: 'string' }
+                                },
+                                required: ['email', 'password']
+                            }
+                        }
+                    }
+                },
+                responses: {
+                    200: { description: 'Login successful' },
+                    401: { description: 'Invalid credentials' }
+                }
+            }
+        },
+        '/api/auth/resend-otp': {
+            post: {
+                summary: 'Resend Verification OTP',
+                tags: ['Authentication'],
+                requestBody: {
+                    required: true,
+                    content: {
+                        'application/json': {
+                            schema: {
+                                type: 'object',
+                                properties: {
+                                    email: { type: 'string', format: 'email' }
+                                },
+                                required: ['email']
+                            }
+                        }
+                    }
+                },
+                responses: {
+                    200: { description: 'OTP resent successfully' },
+                    404: { description: 'User not found' }
+                }
+            }
+        },
         '/api/auth/complete-profile': {
             post: {
                 summary: 'Submit Professional Profile for Vetting',
@@ -60,6 +162,28 @@ const swaggerDocument = {
                 },
             },
         },
+        '/api/profile/me': {
+            get: {
+                summary: 'Get Current User Profile',
+                tags: ['Profile'],
+                security: [{ bearerAuth: [] }],
+                responses: {
+                    200: { description: 'User profile retrieved successfully' },
+                    401: { description: 'Unauthorized' }
+                }
+            }
+        },
+        '/api/profile/dashboard': {
+            get: {
+                summary: 'Access Professional Dashboard',
+                tags: ['Profile'],
+                security: [{ bearerAuth: [] }],
+                responses: {
+                    200: { description: 'Access granted' },
+                    403: { description: 'Forbidden: Onboarding incomplete' }
+                }
+            }
+        }
     },
 };
 
