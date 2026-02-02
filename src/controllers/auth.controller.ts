@@ -4,7 +4,7 @@ import bcrypt from 'bcryptjs';
 import { asyncHandler, AppError } from '../middleware/error.middleware.js';
 import prisma from '../utils/prisma.js';
 import { sendOTPEmail } from '../utils/email.js';
-import { generateOTP } from '../utils/otp.js';
+import { generateOTP, hashOTP, compareOTP } from '../utils/otp.js';
 import type { RegisterInput, LoginInput } from '../validators/auth.validator.js';
 
 /**
@@ -40,9 +40,11 @@ export const register = asyncHandler(async (req: Request<{}, {}, RegisterInput>,
         });
 
         const otpCode = generateOTP();
+        const hashedOTP = await hashOTP(otpCode);
+
         await tx.oTP.create({
             data: {
-                code: otpCode,
+                code: hashedOTP,
                 userId: user.id,
                 expiresAt: new Date(Date.now() + 10 * 60 * 1000), // 10 minutes
             },
@@ -51,7 +53,7 @@ export const register = asyncHandler(async (req: Request<{}, {}, RegisterInput>,
         return { user, otpCode };
     });
 
-    // 4. Send the OTP Email
+    // 4. Send the OTP Email (Plain Text)
     await sendOTPEmail(email, result.otpCode);
 
     res.status(201).json({
@@ -76,7 +78,12 @@ export const verifyOTP = asyncHandler(async (req: Request, res: Response) => {
     if (user.isVerified) throw new AppError('User is already verified', 400);
 
     const latestOTP = user.otps[0];
-    if (!latestOTP || latestOTP.code !== code || latestOTP.expiresAt < new Date()) {
+    if (!latestOTP || latestOTP.expiresAt < new Date()) {
+        throw new AppError('Invalid or expired OTP', 400);
+    }
+
+    const isValid = await compareOTP(code, latestOTP.code);
+    if (!isValid) {
         throw new AppError('Invalid or expired OTP', 400);
     }
 
@@ -152,10 +159,11 @@ export const resendOTP = asyncHandler(async (req: Request, res: Response) => {
     if (user.isVerified) throw new AppError('User is already verified', 400);
 
     const otpCode = generateOTP();
+    const hashedOTP = await hashOTP(otpCode);
 
     await prisma.oTP.create({
         data: {
-            code: otpCode,
+            code: hashedOTP,
             userId: user.id,
             expiresAt: new Date(Date.now() + 10 * 60 * 1000),
         },
