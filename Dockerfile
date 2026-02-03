@@ -16,19 +16,19 @@ COPY . .
 # Generate Prisma Client (Modern Prisma 7 style)
 RUN npx prisma generate
 
-# If you had a build step (e.g. TypeScript to JS), it would go here
-# RUN npm run build
+# Build TypeScript to JavaScript
+RUN npm run build
 
 # 🐳 Stage 2: Run
 FROM node:20-alpine
 
 WORKDIR /app
 
-# Copy only what we need from the builder
-COPY --from=builder /app/node_modules ./node_modules
+# Copy production dependencies
 COPY --from=builder /app/package*.json ./
+COPY --from=builder /app/node_modules ./node_modules
 COPY --from=builder /app/prisma ./prisma/
-COPY --from=builder /app ./ 
+COPY --from=builder /app/dist ./dist/
 
 # Set environment to production
 ENV NODE_ENV=production
