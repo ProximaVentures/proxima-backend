@@ -10,12 +10,12 @@ jobs:
   build-and-test:
     runs-on: ubuntu-latest
 
-    services:
-      # We could spin up a test database here if we had automated test
-      # postgres:
-      #   image: postgres:15-alpine
-      #   env:
-      #     POSTGRES_PASSWORD: password
+    # NOTE: Database service can be added here for integration tests if needed.
+    # services:
+    #   postgres:
+    #     image: postgres:15-alpine
+    #     env:
+    #       POSTGRES_PASSWORD: password
 
     steps:
       - name: 📥 Checkout Code
