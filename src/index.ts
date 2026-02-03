@@ -25,7 +25,7 @@ const corsOptions = {
 
 // Apply CORS first, then other middleware
 app.use(cors(corsOptions));
-app.options('*', cors(corsOptions)); // Enable pre-flight for all routes
+
 
 // Security headers (with relaxed settings for API)
 app.use(helmet({
