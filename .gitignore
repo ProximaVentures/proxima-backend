@@ -1,6 +1,6 @@
 node_modules
 dist
-/.env
+.env/
 .env.*
 !.env.example
 npm-debug.log*
@@ -12,3 +12,5 @@ coverage
 .vscode
 .idea
 build
+
+# check again
