@@ -14,30 +14,24 @@ import { setupSwagger } from './utils/swagger.js';
 const app = express();
 const PORT = process.env.PORT || 5000;
 
-// CORS Configuration - Must be before other middleware
-const corsOptions = {
-    origin: true, // Reflect the request origin (allows all while enabling credentials)
-    methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
-    allowedHeaders: ['Content-Type', 'Authorization', 'Accept', 'Origin', 'X-Requested-With'],
-    credentials: false, // Set to false since we use Authorization header, not cookies
-    optionsSuccessStatus: 200, // For legacy browser support
-    preflightContinue: false,
-};
+// CORS Configuration - Simple and reliable defaults for debugging
+app.use(cors());
 
+// Diagnostic Middleware
+app.use((req, res, next) => {
+    console.log(`[${new Date().toISOString()}] ${req.method} ${req.url} - Host: ${req.headers.host} - Origin: ${req.headers.origin}`);
+    next();
+});
 
-// Apply CORS first, then other middleware
-app.use(cors(corsOptions));
-
-
-// Security headers (with relaxed settings for API)
+// Security headers (with relaxed settings for API documentation and cross-origin access)
 app.use(helmet({
     crossOriginResourcePolicy: { policy: 'cross-origin' },
     crossOriginOpenerPolicy: { policy: 'unsafe-none' },
+    contentSecurityPolicy: false, // Disable CSP for now to ensure Swagger UI works
 }));
 
-app.use(morgan('dev')); // Logs requests for debugging
+app.use(morgan('dev')); // Dev-style logging
 app.use(express.json()); // Parses JSON bodies
-
 
 // ROOT API ENDPOINT
 app.get('/', (req, res) => {
@@ -46,17 +40,15 @@ app.get('/', (req, res) => {
         version: '1.0.0',
         docs: '/api-docs',
         health: '/health',
+        timestamp: new Date().toISOString()
     });
 });
 
 app.get('/api', (req, res) => {
     res.status(200).json({
         message: 'ProVen API v1',
-        endpoints: {
-            auth: '/api/auth',
-            profile: '/api/profile',
-            admin: '/api/admin',
-        },
+        origin: req.headers.origin || 'unknown',
+        host: req.headers.host || 'unknown',
         docs: '/api-docs',
     });
 });

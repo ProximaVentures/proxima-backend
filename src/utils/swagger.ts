@@ -17,10 +17,11 @@ const swaggerDocument = {
     },
     servers: [
         {
-            url: API_URL,
-            description: process.env.NODE_ENV === 'production' ? 'Production Server' : 'Development Server',
+            url: '/',
+            description: 'ProVen API (Current Host)',
         },
     ],
+
     components: {
         securitySchemes: {
             bearerAuth: {
