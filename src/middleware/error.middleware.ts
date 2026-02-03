@@ -1,7 +1,6 @@
 import type { Request, Response, NextFunction } from 'express';
 
-// 🏫 Professor's Tip: Never let your server crash on an error!
-// A Centralized Error Handler catches everything and returns a clean JSON response.
+// Global exception handler to prevent process termination.
 
 export class AppError extends Error {
     statusCode: number;

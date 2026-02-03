@@ -4,8 +4,7 @@ import app from '../index.js';
 import prisma from '../utils/prisma.js';
 import * as emailUtils from '../utils/email.js';
 
-// 🏫 Professor's Tip: Mocking external services (like Email) 
-// ensures your tests are fast and don't fail due to network issues.
+// Mock side-effects to decouple tests from infrastructure.
 jest.mock('../utils/email.js', () => ({
     sendOTPEmail: jest.fn<any>().mockResolvedValue(true),
 }));

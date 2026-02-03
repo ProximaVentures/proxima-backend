@@ -1,9 +1,12 @@
 import type { Express, Request, Response } from 'express';
 import swaggerUi from 'swagger-ui-express';
 
-// Professor's Tip: Ideally, you'd generate this automatically from Zod schemas
-// using a library like `zod-to-swagger` or `swagger-jsdoc`.
-// For manual setup, we define the basic structure here.
+/** @note In production, consider automated schema generation. */
+
+// Dynamically determine the API server URL based on the environment.
+const API_URL = process.env.NODE_ENV === 'production'
+    ? 'https://proven-backend.onrender.com'
+    : `http://localhost:${process.env.PORT || 5000}`;
 
 const swaggerDocument = {
     openapi: '3.0.0',
@@ -14,7 +17,8 @@ const swaggerDocument = {
     },
     servers: [
         {
-            url: 'http://localhost:5000',
+            url: API_URL,
+            description: process.env.NODE_ENV === 'production' ? 'Production Server' : 'Development Server',
         },
     ],
     components: {
@@ -195,5 +199,5 @@ export const setupSwagger = (app: Express) => {
         res.send(swaggerDocument);
     });
 
-    console.log(`Swagger Docs available at http://localhost:5000/api-docs`);
+    console.log(`Swagger Docs available at ${API_URL}/api-docs`);
 };

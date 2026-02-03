@@ -3,8 +3,7 @@ import { PrismaClient } from '@prisma/client';
 import { PrismaPg } from '@prisma/adapter-pg';
 import pg from 'pg';
 
-// 🏫 Professor's Tip: Using the standard 'pg' adapter is the most 
-// compatible way to connect to PostgreSQL (including Neon) from Node.js.
+// Utilize pooled database connections for optimal throughput.
 const connectionString = process.env.DATABASE_URL;
 
 const pool = new pg.Pool({ connectionString });

@@ -4,8 +4,7 @@ import helmet from 'helmet';
 import morgan from 'morgan';
 import 'dotenv/config';
 
-// Professor's Tip: Centralized exports make imports cleaner.
-// We'll create these files in the next sub-steps.
+// Centralize module exports for cleaner entry point imports.
 import { errorHandler } from './middleware/error.middleware.js';
 import authRoutes from './routes/auth.routes.js';
 import profileRoutes from './routes/profile.routes.js';
@@ -36,7 +35,7 @@ app.use(errorHandler);
 
 if (process.env.NODE_ENV !== 'test') {
     app.listen(PORT, () => {
-        console.log(`Master Professor's Server running on http://localhost:${PORT}`);
+        console.log(`ProVen API Server running on http://localhost:${PORT}`);
         // Initialize Swagger
         setupSwagger(app);
     });

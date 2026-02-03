@@ -1,7 +1,6 @@
 import { z } from 'zod';
 
-// Professor's Tip: Use "Discriminated Unions" to handle different shapes of data
-// based on a single field (like 'role'). This is Type-Safety at its finest!
+// Use discriminated unions for strict schema validation.
 
 /**
  * Stage 1: Basic Registration Schema

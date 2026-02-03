@@ -1,8 +1,7 @@
 import nodemailer from 'nodemailer';
 import 'dotenv/config';
 
-// 🏫 Professor's Tip: Use a shared transporter to avoid 
-// opening new connections for every single email.
+// Maintain a single transporter instance for resource efficiency.
 
 const transporter = nodemailer.createTransport({
   service: 'gmail',
