@@ -5,7 +5,8 @@ This document guides the Frontend Team on how to integrate with the ProProven Ba
 ---
 
 ## 🔗 Base URL
-`http://localhost:5000/api` (Local)
+- **Production**: `https://proven-backend.onrender.com/api`
+- **Development**: `http://localhost:5000/api`
 
 ---
 
@@ -38,7 +39,14 @@ This document guides the Frontend Team on how to integrate with the ProProven Ba
     "data": { "user": { "id": "...", "onboardingComplete": false } }
   }
   ```
-- **Front-End Action**: Store `token` in `localStorage` or `cookies`. If `onboardingComplete` is `false` AND role is `PROFESSIONAL`, **redirect to `/onboarding`**.
+- **Front-End Action**: Store `token` in `localStorage` or `cookies`. 
+- **Route Guard Logic**:
+  ```typescript
+  // Example Guard in Next.js Middleware or Layout
+  if (user && !user.onboardingComplete && user.role === 'PROFESSIONAL' && pathname !== '/onboarding') {
+    router.push('/onboarding');
+  }
+  ```
 
 ---
 
@@ -228,7 +236,21 @@ The backend returns standardized errors.
 - **401 Unauthorized**: Invalid or missing Token.
 - **403 Forbidden**: User tried to access dashboard without completing onboarding.
 
+## 🛡️ Best Practices for Integration
+
+### 1. Unified API Client
+Create a shared Axios or Fetch wrapper that automatically attaches the JWT from storage.
+
+### 2. Form Strategy
+Use **React Hook Form** + **Zod** (frontend version) to validate before sending. Match the constraints in `src/validators/auth.validator.ts` to avoid 400 errors from the backend.
+
+### 3. Image Uploads (Coming Soon)
+Profile images and proof-of-work assets will likely use S3 or Cloudinary. For now, use URL strings as placeholders.
+
 ## 🧪 Testing
 
-1.  **Swagger UI**: Visit `http://localhost:5000/api-docs` to test APIs manually.
-2.  **Types**: We use **Zod** on the backend. You can copy the types from `auth.validator.ts` to ensure your frontend forms match perfectly.
+1.  **Swagger UI**: Visit `https://proven-backend.onrender.com/api-docs` (Production) or `http://localhost:5000/api-docs` (Local) to test APIs manually.
+2.  **Mocking**: Use the provided JSON structures in this guide to build your mock data and UI states before the backend is fully wired up.
+
+---
+*ProTip: Check the `SWAGGER_TESTING_GUIDE.md` for a step-by-step walkthrough of the expected request/response flow.*

@@ -12,7 +12,9 @@ This guide walks you through testing the entire "Fraud-Proof" Onboarding flow us
     npx prisma db push
     npm run dev
     ```
-3.  **Open Swagger**: Navigate to `http://localhost:5000/api-docs` in your browser.
+3.  **Open Swagger**: 
+    - **Production**: `https://proven-backend.onrender.com/api-docs`
+    - **Development**: `http://localhost:5000/api-docs`
 
 ---
 
