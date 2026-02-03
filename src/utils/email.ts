@@ -3,32 +3,54 @@ import 'dotenv/config';
 
 // Maintain a single transporter instance for resource efficiency.
 
+// Explicit SMTP Configuration for Production Reliability
 const transporter = nodemailer.createTransport({
-  pool: true, // Use connection pooling for efficiency
-  service: 'gmail',
+  host: 'smtp.gmail.com',
+  port: 465,
+  secure: true, // Use SSL
+  pool: true,
   auth: {
     user: process.env.GMAIL_USER || process.env.EMAIL_USER,
     pass: process.env.GMAIL_APP_PASSWORD || process.env.EMAIL_PASS,
   },
 });
 
-// Diagnostic check (Safe logging)
-const checkEnv = () => {
+// Diagnostic check and Connection Verification on Startup
+const verifyConnection = async () => {
   const user = process.env.GMAIL_USER || process.env.EMAIL_USER;
   const pass = process.env.GMAIL_APP_PASSWORD || process.env.EMAIL_PASS;
-  console.log(`[📧 EMAIL SETUP]: User configured: ${!!user}, Pass configured: ${!!pass}`);
+
+  console.log(`[📧 EMAIL SETUP]: Attempting SMTP Verification...`);
+  console.log(`[📧 EMAIL SETUP]: User: ${user ? 'Configured' : 'MISSING'}, Pass: ${pass ? 'Configured' : 'MISSING'}`);
+
   if (!user || !pass) {
-    console.error('[🚨 EMAIL SETUP FAILED]: Missing SMTP credentials in environment variables.');
+    console.error('[🚨 EMAIL SETUP FAILED]: Missing SMTP credentials.');
+    return;
+  }
+
+  try {
+    await transporter.verify();
+    console.log('[✅ SMTP CONNECTED]: Ready to send emails.');
+  } catch (error: any) {
+    console.error('[🚨 SMTP VERIFICATION FAILED]:', {
+      message: error.message,
+      code: error.code,
+      command: error.command,
+      responseCode: error.responseCode
+    });
   }
 };
-checkEnv();
+
+verifyConnection();
 
 /**
  * Generic Email Sender
  */
 export const sendEmail = async (to: string, subject: string, html: string) => {
+  const authUser = process.env.GMAIL_USER || process.env.EMAIL_USER;
   const mailOptions = {
-    from: `"ProProven Support" <${process.env.EMAIL_FROM || 'support@proproven.dev'}>`,
+    // Gmail often rejects if the 'from' doesn't match the authenticated user
+    from: `"ProProven Support" <${authUser || process.env.EMAIL_FROM || 'support@proproven.dev'}>`,
     to,
     subject,
     html,
@@ -44,11 +66,13 @@ export const sendEmail = async (to: string, subject: string, html: string) => {
     console.error(`[🚨 EMAIL FAILED]: recipient: ${to}`, {
       message: error.message,
       code: error.code,
-      command: error.command
+      command: error.command,
+      response: error.response
     });
     return false;
   }
 };
+
 
 
 /**
