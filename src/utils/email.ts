@@ -4,6 +4,7 @@ import 'dotenv/config';
 // Maintain a single transporter instance for resource efficiency.
 
 const transporter = nodemailer.createTransport({
+  pool: true, // Use connection pooling for efficiency
   service: 'gmail',
   auth: {
     user: process.env.GMAIL_USER || process.env.EMAIL_USER,
@@ -11,26 +12,44 @@ const transporter = nodemailer.createTransport({
   },
 });
 
+// Diagnostic check (Safe logging)
+const checkEnv = () => {
+  const user = process.env.GMAIL_USER || process.env.EMAIL_USER;
+  const pass = process.env.GMAIL_APP_PASSWORD || process.env.EMAIL_PASS;
+  console.log(`[📧 EMAIL SETUP]: User configured: ${!!user}, Pass configured: ${!!pass}`);
+  if (!user || !pass) {
+    console.error('[🚨 EMAIL SETUP FAILED]: Missing SMTP credentials in environment variables.');
+  }
+};
+checkEnv();
+
 /**
  * Generic Email Sender
  */
 export const sendEmail = async (to: string, subject: string, html: string) => {
   const mailOptions = {
-    from: `"ProProven Support" <${process.env.EMAIL_FROM}>`,
+    from: `"ProProven Support" <${process.env.EMAIL_FROM || 'support@proproven.dev'}>`,
     to,
     subject,
     html,
   };
 
+  console.log(`[📩 ATTEMPTING EMAIL]: To: ${to}, Subject: ${subject}`);
+
   try {
     const info = await transporter.sendMail(mailOptions);
-    console.log(`[📧 EMAIL SENT]: ${info.messageId}`);
+    console.log(`[✅ EMAIL SENT]: ${info.messageId}`);
     return true;
-  } catch (error) {
-    console.error(`[🚨 EMAIL FAILED]:`, error);
+  } catch (error: any) {
+    console.error(`[🚨 EMAIL FAILED]: recipient: ${to}`, {
+      message: error.message,
+      code: error.code,
+      command: error.command
+    });
     return false;
   }
 };
+
 
 /**
  * Sends a stylized OTP email to the user.

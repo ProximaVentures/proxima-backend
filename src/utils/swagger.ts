@@ -134,6 +134,31 @@ const swaggerDocument = {
                 }
             }
         },
+        '/api/auth/test-email': {
+            post: {
+                summary: 'Diagnostic: Send a test OTP email (Sync)',
+                tags: ['Authentication'],
+                requestBody: {
+                    required: true,
+                    content: {
+                        'application/json': {
+                            schema: {
+                                type: 'object',
+                                properties: {
+                                    email: { type: 'string', format: 'email' }
+                                },
+                                required: ['email']
+                            }
+                        }
+                    }
+                },
+                responses: {
+                    200: { description: 'Test email request processed' },
+                    500: { description: 'SMTP Error' }
+                }
+            }
+        },
+
         '/api/auth/complete-profile': {
             post: {
                 summary: 'Submit Professional Profile for Vetting',

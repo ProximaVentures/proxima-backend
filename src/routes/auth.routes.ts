@@ -28,6 +28,11 @@ router.post(
 );
 
 router.post(
+    '/test-email',
+    authController.testEmail
+);
+
+router.post(
     '/login',
     validate(loginSchema),
     authController.login

@@ -53,8 +53,10 @@ export const register = asyncHandler(async (req: Request<{}, {}, RegisterInput>,
         return { user, otpCode };
     });
 
-    // 4. Send the OTP Email (Plain Text)
-    await sendOTPEmail(email, result.otpCode);
+    // 4. Send the OTP Email (Asynchronous / Non-blocking)
+    sendOTPEmail(email, result.otpCode).catch(err => {
+        console.error(`[🚨 BACKGROUND EMAIL FAILED]: ${email}`, err);
+    });
 
     res.status(201).json({
         success: true,
@@ -169,7 +171,10 @@ export const resendOTP = asyncHandler(async (req: Request, res: Response) => {
         },
     });
 
-    await sendOTPEmail(email, otpCode);
+    // Asynchronous / Non-blocking
+    sendOTPEmail(email, otpCode).catch(err => {
+        console.error(`[🚨 BACKGROUND EMAIL FAILED]: ${email}`, err);
+    });
 
     res.status(200).json({
         success: true,
@@ -202,3 +207,21 @@ export const completeProfile = asyncHandler(async (req: Request, res: Response) 
         data: updatedProfile,
     });
 });
+
+/**
+ * Diagnostic Test Email Controller
+ */
+export const testEmail = asyncHandler(async (req: Request, res: Response) => {
+    const { email } = req.body;
+    if (!email) throw new AppError('Email is required', 400);
+
+    console.log(`[🧪 TEST EMAIL]: Request for ${email}`);
+    const success = await sendOTPEmail(email, '123456');
+
+    if (success) {
+        res.status(200).json({ success: true, message: 'Test email sent successfully!' });
+    } else {
+        res.status(500).json({ success: false, message: 'Failed to send test email. Check server logs.' });
+    }
+});
+
