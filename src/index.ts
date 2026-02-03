@@ -14,11 +14,28 @@ import { setupSwagger } from './utils/swagger.js';
 const app = express();
 const PORT = process.env.PORT || 5000;
 
-// SECURITY & UTILS
-app.use(helmet()); // Protects headers from common attacks
-app.use(cors());   // Allows frontend to talk to backend
+// CORS Configuration - Must be before other middleware
+const corsOptions = {
+    origin: '*', // Allow all origins for now (can be restricted later)
+    methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
+    allowedHeaders: ['Content-Type', 'Authorization', 'Accept', 'Origin', 'X-Requested-With'],
+    credentials: true,
+    optionsSuccessStatus: 200, // For legacy browser support
+};
+
+// Apply CORS first, then other middleware
+app.use(cors(corsOptions));
+app.options('*', cors(corsOptions)); // Enable pre-flight for all routes
+
+// Security headers (with relaxed settings for API)
+app.use(helmet({
+    crossOriginResourcePolicy: { policy: 'cross-origin' },
+    crossOriginOpenerPolicy: { policy: 'unsafe-none' },
+}));
+
 app.use(morgan('dev')); // Logs requests for debugging
 app.use(express.json()); // Parses JSON bodies
+
 
 // ROOT API ENDPOINT
 app.get('/', (req, res) => {
