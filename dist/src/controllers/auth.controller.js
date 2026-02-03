@@ -3,9 +3,9 @@ import bcrypt from 'bcryptjs';
 import { asyncHandler, AppError } from '../middleware/error.middleware.js';
 import prisma from '../utils/prisma.js';
 import { sendOTPEmail } from '../utils/email.js';
-import { generateOTP } from '../utils/otp.js';
+import { generateOTP, hashOTP, compareOTP } from '../utils/otp.js';
 /**
- * 🔐 Register Controller (Stage 1)
+ * Register Controller (Stage 1)
  * Creates a basic user account, generates an OTP, and sends a verification email.
  */
 export const register = asyncHandler(async (req, res) => {
@@ -32,16 +32,17 @@ export const register = asyncHandler(async (req, res) => {
             data: { userId: user.id },
         });
         const otpCode = generateOTP();
+        const hashedOTP = await hashOTP(otpCode);
         await tx.oTP.create({
             data: {
-                code: otpCode,
+                code: hashedOTP,
                 userId: user.id,
                 expiresAt: new Date(Date.now() + 10 * 60 * 1000), // 10 minutes
             },
         });
         return { user, otpCode };
     });
-    // 4. Send the OTP Email
+    // 4. Send the OTP Email (Plain Text)
     await sendOTPEmail(email, result.otpCode);
     res.status(201).json({
         success: true,
@@ -50,7 +51,7 @@ export const register = asyncHandler(async (req, res) => {
     });
 });
 /**
- * ✅ Verify OTP Controller
+ * Verify OTP Controller
  */
 export const verifyOTP = asyncHandler(async (req, res) => {
     const { email, code } = req.body;
@@ -63,7 +64,11 @@ export const verifyOTP = asyncHandler(async (req, res) => {
     if (user.isVerified)
         throw new AppError('User is already verified', 400);
     const latestOTP = user.otps[0];
-    if (!latestOTP || latestOTP.code !== code || latestOTP.expiresAt < new Date()) {
+    if (!latestOTP || latestOTP.expiresAt < new Date()) {
+        throw new AppError('Invalid or expired OTP', 400);
+    }
+    const isValid = await compareOTP(code, latestOTP.code);
+    if (!isValid) {
         throw new AppError('Invalid or expired OTP', 400);
     }
     // Mark user as verified
@@ -79,7 +84,7 @@ export const verifyOTP = asyncHandler(async (req, res) => {
     });
 });
 /**
- * 🔑 Login Controller
+ * Login Controller
  */
 export const login = asyncHandler(async (req, res) => {
     const { email, password } = req.body;
@@ -114,7 +119,7 @@ export const login = asyncHandler(async (req, res) => {
     });
 });
 /**
- * 🔄 Resend OTP Controller
+ * Resend OTP Controller
  */
 export const resendOTP = asyncHandler(async (req, res) => {
     const { email } = req.body;
@@ -124,9 +129,10 @@ export const resendOTP = asyncHandler(async (req, res) => {
     if (user.isVerified)
         throw new AppError('User is already verified', 400);
     const otpCode = generateOTP();
+    const hashedOTP = await hashOTP(otpCode);
     await prisma.oTP.create({
         data: {
-            code: otpCode,
+            code: hashedOTP,
             userId: user.id,
             expiresAt: new Date(Date.now() + 10 * 60 * 1000),
         },
@@ -138,7 +144,7 @@ export const resendOTP = asyncHandler(async (req, res) => {
     });
 });
 /**
- * 🔒 Profile Completion Controller (Stage 2)
+ * Profile Completion Controller (Stage 2)
  */
 export const completeProfile = asyncHandler(async (req, res) => {
     const { userId, category, metadata, firstName, lastName, bio } = req.body;

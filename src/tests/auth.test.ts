@@ -7,7 +7,7 @@ import * as emailUtils from '../utils/email.js';
 // 🏫 Professor's Tip: Mocking external services (like Email) 
 // ensures your tests are fast and don't fail due to network issues.
 jest.mock('../utils/email.js', () => ({
-    sendOTPEmail: jest.fn().mockResolvedValue(true),
+    sendOTPEmail: jest.fn<any>().mockResolvedValue(true),
 }));
 
 describe('🔒 Authentication Integration Tests', () => {
@@ -53,7 +53,8 @@ describe('🔒 Authentication Integration Tests', () => {
             where: { email: testUser.email },
             include: { otps: true }
         });
-        const otpCode = userWithOTP!.otps[0].code;
+        const otpCode = userWithOTP?.otps?.[0]?.code;
+        if (!otpCode) throw new Error('OTP not generated in test');
 
         // 2. Verify it
         const res = await request(app)

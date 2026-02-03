@@ -50,7 +50,7 @@ export const professionalProfileSchema = z.discriminatedUnion('category', [
                 'DATA_ENGINEER',
                 'QA_ENGINEER',
                 'OTHER'
-            ], { required_error: "Please select your developer specialization" }),
+            ]),
             githubUrl: z.string().url("GitHub URL is required for code verification"),
             portfolioUrl: z.string().url("Portfolio URL is required"),
             resumeUrl: z.string().url("Resume/CV link is required"),
@@ -103,7 +103,7 @@ export const professionalProfileSchema = z.discriminatedUnion('category', [
         ...BaseProfileSchema.shape,
         metadata: z.object({
             portfolioUrl: z.string().url("Portfolio/Blog URL is required"),
-            socialMediaStats: z.record(z.string()), // e.g., { "instagram": "10k" }
+            socialMediaStats: z.record(z.string(), z.string()), // Corrected z.record signature
             niche: z.string(),
         }),
     }),

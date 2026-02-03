@@ -6,7 +6,7 @@ export interface AuthUser {
     role: Role;
     email: string;
     onboardingComplete: boolean;
-    vettingStatus?: string;
+    vettingStatus?: string | null | undefined;
 }
 
 export interface AuthRequest extends Request {

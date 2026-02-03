@@ -50,7 +50,7 @@ export const protect = async (req: AuthRequest, res: Response, next: NextFunctio
             role: user.role,
             email: user.email,
             onboardingComplete: user.profile?.onboardingComplete || false,
-            vettingStatus: user.profile?.vettingStatus
+            vettingStatus: user.profile?.vettingStatus as string | undefined
         };
 
         next();
