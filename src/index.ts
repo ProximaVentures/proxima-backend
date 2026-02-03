@@ -9,6 +9,7 @@ import 'dotenv/config';
 import { errorHandler } from './middleware/error.middleware.js';
 import authRoutes from './routes/auth.routes.js';
 import profileRoutes from './routes/profile.routes.js';
+import adminRoutes from './routes/admin.routes.js';
 import { setupSwagger } from './utils/swagger.js';
 
 const app = express();
@@ -28,6 +29,7 @@ app.get('/health', (req, res) => {
 // ROUTES
 app.use('/api/auth', authRoutes);
 app.use('/api/profile', profileRoutes);
+app.use('/api/admin', adminRoutes);
 
 // ERROR HANDLING
 app.use(errorHandler);

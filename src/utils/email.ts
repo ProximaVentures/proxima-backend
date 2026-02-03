@@ -13,14 +13,32 @@ const transporter = nodemailer.createTransport({
 });
 
 /**
- * Sends a stylized OTP email to the user.
+ * Generic Email Sender
  */
-export const sendOTPEmail = async (to: string, otp: string) => {
+export const sendEmail = async (to: string, subject: string, html: string) => {
   const mailOptions = {
     from: `"ProProven Support" <${process.env.EMAIL_FROM}>`,
     to,
-    subject: `🔐 Your ProProven Verification Code: ${otp}`,
-    html: `
+    subject,
+    html,
+  };
+
+  try {
+    const info = await transporter.sendMail(mailOptions);
+    console.log(`[📧 EMAIL SENT]: ${info.messageId}`);
+    return true;
+  } catch (error) {
+    console.error(`[🚨 EMAIL FAILED]:`, error);
+    return false;
+  }
+};
+
+/**
+ * Sends a stylized OTP email to the user.
+ */
+export const sendOTPEmail = async (to: string, otp: string) => {
+  const subject = `🔐 Your ProProven Verification Code: ${otp}`;
+  const html = `
       <div style="font-family: sans-serif; max-width: 600px; margin: auto; padding: 20px; border: 1px solid #eee; border-radius: 10px;">
         <h2 style="color: #4F46E5; text-align: center;">Welcome to ProProven</h2>
         <p>Hello,</p>
@@ -34,15 +52,6 @@ export const sendOTPEmail = async (to: string, otp: string) => {
           Powered by Proxima Ventures
         </p>
       </div>
-    `,
-  };
-
-  try {
-    const info = await transporter.sendMail(mailOptions);
-    console.log(`[📧 EMAIL SENT]: ${info.messageId}`);
-    return true;
-  } catch (error) {
-    console.error(`[🚨 EMAIL FAILED]:`, error);
-    return false;
-  }
+    `;
+  return await sendEmail(to, subject, html);
 };
