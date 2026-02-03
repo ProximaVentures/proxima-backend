@@ -4,16 +4,20 @@ import 'dotenv/config';
 // Maintain a single transporter instance for resource efficiency.
 
 // Explicit SMTP Configuration for Production Reliability
+// Port 587 (TLS) is often more reliable in cloud environments than 465 (SSL)
 const transporter = nodemailer.createTransport({
   host: 'smtp.gmail.com',
-  port: 465,
-  secure: true, // Use SSL
+  port: 587,
+  secure: false, // Use TLS (STARTTLS)
   pool: true,
   auth: {
     user: process.env.GMAIL_USER || process.env.EMAIL_USER,
     pass: process.env.GMAIL_APP_PASSWORD || process.env.EMAIL_PASS,
   },
+  connectionTimeout: 10000, // 10 seconds
+  greetingTimeout: 10000,
 });
+
 
 // Diagnostic check and Connection Verification on Startup
 const verifyConnection = async () => {
