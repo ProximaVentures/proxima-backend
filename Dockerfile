@@ -17,7 +17,7 @@ COPY . .
 RUN npx prisma generate
 
 # Build TypeScript to JavaScript
-RUN npm run build
+RUN rm -rf dist && npm run build
 
 # 🐳 Stage 2: Run
 FROM node:20-alpine
