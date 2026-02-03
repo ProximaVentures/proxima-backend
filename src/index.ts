@@ -16,12 +16,14 @@ const PORT = process.env.PORT || 5000;
 
 // CORS Configuration - Must be before other middleware
 const corsOptions = {
-    origin: '*', // Allow all origins for now (can be restricted later)
+    origin: true, // Reflect the request origin (allows all while enabling credentials)
     methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
     allowedHeaders: ['Content-Type', 'Authorization', 'Accept', 'Origin', 'X-Requested-With'],
-    credentials: true,
+    credentials: false, // Set to false since we use Authorization header, not cookies
     optionsSuccessStatus: 200, // For legacy browser support
+    preflightContinue: false,
 };
+
 
 // Apply CORS first, then other middleware
 app.use(cors(corsOptions));
