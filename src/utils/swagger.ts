@@ -134,6 +134,34 @@ const swaggerDocument = {
                 }
             }
         },
+        '/api/auth/social-login': {
+            post: {
+                summary: 'Social Login/Signup (Google/Facebook)',
+                tags: ['Authentication'],
+                requestBody: {
+                    required: true,
+                    content: {
+                        'application/json': {
+                            schema: {
+                                type: 'object',
+                                properties: {
+                                    email: { type: 'string', format: 'email' },
+                                    name: { type: 'string' },
+                                    provider: { type: 'string', enum: ['google', 'facebook'] },
+                                    providerId: { type: 'string' },
+                                    image: { type: 'string' }
+                                },
+                                required: ['email', 'name', 'provider', 'providerId']
+                            }
+                        }
+                    }
+                },
+                responses: {
+                    200: { description: 'Social login successful' },
+                    400: { description: 'Invalid social data' }
+                }
+            }
+        },
         '/api/auth/test-email': {
             post: {
                 summary: 'Diagnostic: Send a test OTP email (Sync)',

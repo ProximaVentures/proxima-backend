@@ -106,6 +106,10 @@ export const login = asyncHandler(async (req: Request<{}, {}, LoginInput>, res: 
         throw new AppError('Invalid email or password', 401);
     }
 
+    if (!user.password) {
+        throw new AppError('Invalid email or password', 401);
+    }
+
     const isPasswordValid = await bcrypt.compare(password, user.password);
     if (!isPasswordValid) {
         throw new AppError('Invalid email or password', 401);
