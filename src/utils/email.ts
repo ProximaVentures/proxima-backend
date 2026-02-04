@@ -1,91 +1,42 @@
-import nodemailer from 'nodemailer';
+import { Resend } from 'resend';
 import 'dotenv/config';
 
-// Maintain a single transporter instance for resource efficiency.
-
-// Explicit SMTP Configuration for Production Reliability
-// Port 587 (TLS) is often more reliable in cloud environments than 465 (SSL)
-const transporter = nodemailer.createTransport({
-  host: 'smtp.gmail.com',
-  port: 587,
-  secure: false, // Use TLS (STARTTLS)
-  pool: true,
-  auth: {
-    user: process.env.GMAIL_USER || process.env.EMAIL_USER,
-    pass: process.env.GMAIL_APP_PASSWORD || process.env.EMAIL_PASS,
-  },
-  tls: {
-    // Some cloud platforms have issues with certificate verification
-    rejectUnauthorized: false,
-    minVersion: 'TLSv1.2'
-  },
-  debug: true, // Output raw SMTP traffic to logs
-  logger: true, // Log to console
-  connectionTimeout: 15000, // 15 seconds
-  greetingTimeout: 15000,
-});
-
-
-
-// Diagnostic check and Connection Verification on Startup
-const verifyConnection = async () => {
-  const user = process.env.GMAIL_USER || process.env.EMAIL_USER;
-  const pass = process.env.GMAIL_APP_PASSWORD || process.env.EMAIL_PASS;
-
-  console.log(`[📧 EMAIL SETUP]: Attempting SMTP Verification...`);
-  console.log(`[📧 EMAIL SETUP]: User: ${user ? 'Configured' : 'MISSING'}, Pass: ${pass ? 'Configured' : 'MISSING'}`);
-
-  if (!user || !pass) {
-    console.error('[🚨 EMAIL SETUP FAILED]: Missing SMTP credentials.');
-    return;
-  }
-
-  try {
-    await transporter.verify();
-    console.log('[✅ SMTP CONNECTED]: Ready to send emails.');
-  } catch (error: any) {
-    console.error('[🚨 SMTP VERIFICATION FAILED]:', {
-      message: error.message,
-      code: error.code,
-      command: error.command,
-      responseCode: error.responseCode
-    });
-  }
-};
-
-verifyConnection();
+// Initialize Resend Client
+const resend = new Resend(process.env.RESEND_API_KEY);
 
 /**
- * Generic Email Sender
+ * Generic Email Sender via Resend API
  */
 export const sendEmail = async (to: string, subject: string, html: string) => {
-  const authUser = process.env.GMAIL_USER || process.env.EMAIL_USER;
-  const mailOptions = {
-    // Gmail often rejects if the 'from' doesn't match the authenticated user
-    from: `"ProProven Support" <${authUser || process.env.EMAIL_FROM || 'support@proproven.dev'}>`,
-    to,
-    subject,
-    html,
-  };
+  const from = process.env.EMAIL_FROM || 'onboarding@resend.dev';
 
-  console.log(`[📩 ATTEMPTING EMAIL]: To: ${to}, Subject: ${subject}`);
+  console.log(`[🚀 ATTEMPTING EMAIL VIA RESEND]: To: ${to}, Subject: ${subject}`);
+
+  if (!process.env.RESEND_API_KEY) {
+    console.error('[🚨 RESEND FAILED]: RESEND_API_KEY is missing in .env');
+    return false;
+  }
 
   try {
-    const info = await transporter.sendMail(mailOptions);
-    console.log(`[✅ EMAIL SENT]: ${info.messageId}`);
+    const { data, error } = await resend.emails.send({
+      from: `ProProven <${from}>`,
+      to,
+      subject,
+      html,
+    });
+
+    if (error) {
+      console.error(`[🚨 RESEND API ERROR]: recipient: ${to}`, error);
+      return false;
+    }
+
+    console.log(`[✅ EMAIL SENT]: ID: ${data?.id}`);
     return true;
   } catch (error: any) {
-    console.error(`[🚨 EMAIL FAILED]: recipient: ${to}`, {
-      message: error.message,
-      code: error.code,
-      command: error.command,
-      response: error.response
-    });
+    console.error(`[🚨 RESEND UNEXPECTED ERROR]: recipient: ${to}`, error);
     return false;
   }
 };
-
-
 
 /**
  * Sends a stylized OTP email to the user.

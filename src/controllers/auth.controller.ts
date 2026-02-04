@@ -6,6 +6,7 @@ import prisma from '../utils/prisma.js';
 import { sendOTPEmail } from '../utils/email.js';
 import { generateOTP, hashOTP, compareOTP } from '../utils/otp.js';
 import type { RegisterInput, LoginInput } from '../validators/auth.validator.js';
+import redis from '../utils/redis.js';
 
 /**
  * Register Controller (Stage 1)
@@ -40,15 +41,8 @@ export const register = asyncHandler(async (req: Request<{}, {}, RegisterInput>,
         });
 
         const otpCode = generateOTP();
-        const hashedOTP = await hashOTP(otpCode);
-
-        await tx.oTP.create({
-            data: {
-                code: hashedOTP,
-                userId: user.id,
-                expiresAt: new Date(Date.now() + 10 * 60 * 1000), // 10 minutes
-            },
-        });
+        // Store in Redis: Key = "otp:email", Value = the code, EX = 600 seconds (10 mins)
+        await redis.set(`otp:${email}`, otpCode, 'EX', 600);
 
         return { user, otpCode };
     });
@@ -71,38 +65,29 @@ export const register = asyncHandler(async (req: Request<{}, {}, RegisterInput>,
 export const verifyOTP = asyncHandler(async (req: Request, res: Response) => {
     const { email, code } = req.body;
 
-    const user = await prisma.user.findUnique({
-        where: { email },
-        include: { otps: { orderBy: { createdAt: 'desc' }, take: 1 } },
-    });
+    // 1. Fetch code from Redis
+    const storedOTP = await redis.get(`otp:${email}`);
 
-    if (!user) throw new AppError('User not found', 404);
-    if (user.isVerified) throw new AppError('User is already verified', 400);
-
-    const latestOTP = user.otps[0];
-    if (!latestOTP || latestOTP.expiresAt < new Date()) {
+    if (!storedOTP || storedOTP !== code) {
         throw new AppError('Invalid or expired OTP', 400);
     }
 
-    const isValid = await compareOTP(code, latestOTP.code);
-    if (!isValid) {
-        throw new AppError('Invalid or expired OTP', 400);
-    }
-
-    // Mark user as verified
+    // 2. Mark user as verified in Database
     await prisma.user.update({
-        where: { id: user.id },
-        data: { isVerified: true },
+        where: { email },
+        data: { isVerified: true }
     });
 
-    // Clean up OTPs
-    await prisma.oTP.deleteMany({ where: { userId: user.id } });
+    // 3. Cleanup: delete from Redis immediately
+    await redis.del(`otp:${email}`);
 
+    // 4. Send success response (Fixes the "loading forever" issue)
     res.status(200).json({
         success: true,
-        message: 'Email verified successfully! You can now log in.',
+        message: 'Email verified successfully! You can now log in.'
     });
 });
+
 
 /**
  * Login Controller
@@ -156,22 +141,16 @@ export const login = asyncHandler(async (req: Request<{}, {}, LoginInput>, res: 
 export const resendOTP = asyncHandler(async (req: Request, res: Response) => {
     const { email } = req.body;
 
+    // 1. Check if user exists and isn't verified
     const user = await prisma.user.findUnique({ where: { email } });
     if (!user) throw new AppError('User not found', 404);
     if (user.isVerified) throw new AppError('User is already verified', 400);
 
+    // 2. Generate new OTP and store in Redis
     const otpCode = generateOTP();
-    const hashedOTP = await hashOTP(otpCode);
+    await redis.set(`otp:${email}`, otpCode, 'EX', 600);
 
-    await prisma.oTP.create({
-        data: {
-            code: hashedOTP,
-            userId: user.id,
-            expiresAt: new Date(Date.now() + 10 * 60 * 1000),
-        },
-    });
-
-    // Asynchronous / Non-blocking
+    // 3. Send the OTP Email (Asynchronous / Non-blocking)
     sendOTPEmail(email, otpCode).catch(err => {
         console.error(`[🚨 BACKGROUND EMAIL FAILED]: ${email}`, err);
     });
