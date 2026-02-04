@@ -11,17 +11,24 @@ services:
         value: production
       - key: DATABASE_URL
         fromDatabase:
-          name: proven-db # Replace this with your database name if using Render Postgres
+          name: proven-db
           property: connectionString
-        # Or if using Neon/External:
-        # sync: false # manually set in dashboard or use - key: DATABASE_URL
+      - key: REDIS_URL
+        fromService:
+          type: redis
+          name: proven-redis
+          property: connectionString
       - key: JWT_SECRET
         generateValue: true
-      - key: EMAIL_USER
-        sync: false
-      - key: EMAIL_PASS
+      - key: RESEND_API_KEY
         sync: false
       - key: EMAIL_FROM
         sync: false
       - key: PORT
         value: 5000
+
+  - type: redis
+    name: proven-redis
+    plan: free # or your preferred plan
+    region: frankfurt
+    ipAllowList: [] # Allow all internal traffic
