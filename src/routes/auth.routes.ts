@@ -4,7 +4,8 @@ import { validate } from '../middleware/validate.middleware.js';
 import {
     registerSchema,
     professionalProfileSchema,
-    loginSchema
+    loginSchema,
+    socialLoginSchema
 } from '../validators/auth.validator.js';
 
 const router = Router();
@@ -36,6 +37,12 @@ router.post(
     '/login',
     validate(loginSchema),
     authController.login
+);
+
+router.post(
+    '/social-login',
+    validate(socialLoginSchema),
+    authController.socialLogin
 );
 
 import { protect, authorize } from '../middleware/auth.middleware.js';

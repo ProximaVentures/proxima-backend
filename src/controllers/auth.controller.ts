@@ -5,7 +5,9 @@ import { asyncHandler, AppError } from '../middleware/error.middleware.js';
 import prisma from '../utils/prisma.js';
 import { sendOTPEmail } from '../utils/email.js';
 import { generateOTP, hashOTP, compareOTP } from '../utils/otp.js';
-import type { RegisterInput, LoginInput } from '../validators/auth.validator.js';
+import type { RegisterInput, LoginInput, socialLoginSchema } from '../validators/auth.validator.js';
+import { z } from 'zod';
+type SocialLoginInput = z.infer<typeof socialLoginSchema>;
 import redis from '../utils/redis.js';
 
 /**
@@ -204,3 +206,84 @@ export const testEmail = asyncHandler(async (req: Request, res: Response) => {
     }
 });
 
+/**
+ * Social Login Controller
+ */
+export const socialLogin = asyncHandler(async (req: Request<{}, {}, SocialLoginInput>, res: Response) => {
+    const { email, name, provider, providerId, image } = req.body;
+
+    let user = await prisma.user.findUnique({
+        where: { email },
+        include: { profile: true },
+    });
+
+    if (!user) {
+        // Create new user for social signup
+        const result = await prisma.$transaction(async (tx) => {
+            const newUser = await tx.user.create({
+                data: {
+                    email,
+                    username: name.toLowerCase().replace(/\s+/g, '_') + Math.floor(Math.random() * 1000),
+                    isVerified: true, // Social users are pre-verified
+                    provider,
+                    providerId,
+                    role: 'CLIENT', // Default role for searchers
+                },
+            });
+
+            await tx.profile.create({
+                data: {
+                    userId: newUser.id,
+                    firstName: name.split(' ')[0] || null,
+                    lastName: name.split(' ').slice(1).join(' ') || null,
+                    avatarUrl: image || null,
+                },
+            });
+
+            return tx.user.findUnique({
+                where: { id: newUser.id },
+                include: { profile: true }
+            });
+        });
+
+        if (!result) throw new AppError('Fatal: Failed to create user account', 500);
+        user = result;
+    } else {
+        // Link social if not already linked (e.g., if they previously registered via email)
+        if (user.provider === 'credentials') {
+            user = await prisma.user.update({
+                where: { email },
+                data: {
+                    provider,
+                    providerId,
+                    isVerified: true
+                },
+                include: { profile: true }
+            });
+        }
+    }
+
+    // Final safety check
+    if (!user) throw new AppError('User not found', 404);
+
+    // Generate JWT
+    const token = jwt.sign(
+        { userId: user.id, role: user.role },
+        process.env.JWT_SECRET || 'secret',
+        { expiresIn: '1d' }
+    );
+
+    res.status(200).json({
+        success: true,
+        message: 'Social login successful',
+        token,
+        data: {
+            user: {
+                id: user.id,
+                email: user.email,
+                role: user.role,
+                onboardingComplete: user.profile?.onboardingComplete || false,
+            },
+        },
+    });
+});

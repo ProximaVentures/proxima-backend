@@ -191,6 +191,14 @@ export const loginSchema = z.object({
     password: z.string().min(8),
 });
 
+export const socialLoginSchema = z.object({
+    email: z.string().email(),
+    name: z.string().min(2),
+    provider: z.enum(['google', 'facebook']),
+    providerId: z.string().min(1),
+    image: z.string().url().optional(),
+});
+
 export type RegisterInput = z.infer<typeof registerSchema>;
 export type ProfessionalProfileInput = z.infer<typeof professionalProfileSchema>;
 export type LoginInput = z.infer<typeof loginSchema>;

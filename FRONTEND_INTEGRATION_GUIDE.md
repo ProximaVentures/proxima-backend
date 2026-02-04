@@ -25,10 +25,15 @@ This document guides the Frontend Team on how to integrate with the ProProven Ba
   ```
 - **Response**: `201 Created`. Check email for OTP.
 
-### 2. Verify OTP
-- **Endpoint**: `POST /auth/verify-otp`
-- **Body**: `{ "email": "john@example.com", "code": "123456" }`
-- **Response**: `200 OK`. User is now verified.
+- **Response**: `200 OK`. 
+  ```json
+  { "success": true, "message": "Email verified successfully! You can now log in." }
+  ```
+
+### 3. Resend OTP
+- **Endpoint**: `POST /auth/resend-otp`
+- **Body**: `{ "email": "john@example.com" }`
+- **Response**: `200 OK`. A new code is sent via Resend API.
 
 ### 3. Login
 - **Endpoint**: `POST /auth/login`
@@ -40,13 +45,33 @@ This document guides the Frontend Team on how to integrate with the ProProven Ba
   }
   ```
 - **Front-End Action**: Store `token` in `localStorage` or `cookies`. 
-- **Route Guard Logic**:
-  ```typescript
-  // Example Guard in Next.js Middleware or Layout
-  if (user && !user.onboardingComplete && user.role === 'PROFESSIONAL' && pathname !== '/onboarding') {
-    router.push('/onboarding');
+
+---
+
+## 🌐 Social Authentication (NEW)
+
+To provide a premium experience, we support **Google** and **Facebook** login via **Auth.js (NextAuth)**.
+
+### 1. Frontend Flow (NextAuth)
+1.  Use `signIn('google')` or `signIn('facebook')` from `next-auth/react`.
+2.  Once authenticated, call the backend to link the account or sign in.
+
+### 2. Backend Verification
+- **Endpoint**: `POST /auth/social-login`
+- **Body**:
+  ```json
+  {
+    "email": "user@example.com",
+    "name": "John Doe",
+    "provider": "google", // or "facebook"
+    "providerId": "123456789", // The unique ID from the social provider
+    "image": "https://..." // Optional profile picture
   }
   ```
+- **Backend Action**:
+  - If user doesn't exist: Create account (skip OTP, set `isVerified: true`).
+  - If user exists but is not linked: Link social ID.
+- **Response**: Standard `{ "token": "...", "data": { "user": { ... } } }`.
 
 ---
 
