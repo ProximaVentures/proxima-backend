@@ -31,7 +31,7 @@ const authLimiter = rateLimit({
 app.use('/api/auth', authLimiter);
 
 // 🌐 CORS Configuration - Restrictive Whitelist
-const allowedOrigins = process.env.ALLOWED_ORIGINS?.split(',') || ['http://localhost:3000', 'http://localhost:3001'];
+const allowedOrigins = process.env.ALLOWED_ORIGINS?.split(',') || ['http://localhost:3000', 'http://localhost:3001', 'https://proventures.vercel.app'];
 app.use(cors({
     origin: (origin, callback) => {
         // Allow requests with no origin (like mobile apps or curl)
