@@ -32,7 +32,15 @@ export const protect = async (req: AuthRequest, res: Response, next: NextFunctio
 
     try {
         // 1. Verify Token
-        const decoded = jwt.verify(token, process.env.JWT_SECRET || 'secret') as JwtPayload;
+        const secret = process.env.JWT_SECRET;
+        if (!secret) {
+            console.error('[🚨 SECURITY CRITICAL]: JWT_SECRET is not defined in environment variables');
+            if (process.env.NODE_ENV === 'production') {
+                return next(new AppError('Internal Server Error', 500));
+            }
+        }
+
+        const decoded = jwt.verify(token, secret || 'secret') as JwtPayload;
 
         // 2. Check if User Exists
         const user = await prisma.user.findUnique({
@@ -55,7 +63,7 @@ export const protect = async (req: AuthRequest, res: Response, next: NextFunctio
 
         next();
     } catch (error) {
-        return next(new AppError('Not authorized to access this route', 401));
+        return next(new AppError('Token is invalid or expired', 401));
     }
 };
 
@@ -65,8 +73,13 @@ export const protect = async (req: AuthRequest, res: Response, next: NextFunctio
  */
 export const authorize = (...roles: Role[]) => {
     return (req: AuthRequest, res: Response, next: NextFunction) => {
-        if (!req.user || !roles.includes(req.user.role)) {
-            return next(new AppError(`User role ${req.user?.role} is not authorized to access this route`, 403));
+        if (!req.user) {
+            return next(new AppError('Not authorized', 401));
+        }
+
+        if (!roles.includes(req.user.role)) {
+            console.warn(`[🚨 UNAUTHORIZED ACCESS ATTEMPT]: User ${req.user.id} (${req.user.role}) tried to access route restricted to roles: ${roles.join(', ')}`);
+            return next(new AppError(`User role ${req.user.role} is not authorized to access this route`, 403));
         }
         next();
     };

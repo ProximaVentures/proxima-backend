@@ -2,6 +2,7 @@ import type { Request, Response } from 'express';
 import jwt from 'jsonwebtoken';
 import bcrypt from 'bcryptjs';
 import { asyncHandler, AppError } from '../middleware/error.middleware.js';
+import type { AuthRequest } from '../interfaces/auth.interface.js';
 import prisma from '../utils/prisma.js';
 import { sendOTPEmail } from '../utils/email.js';
 import { generateOTP, hashOTP, compareOTP } from '../utils/otp.js';
@@ -170,8 +171,11 @@ export const resendOTP = asyncHandler(async (req: Request, res: Response) => {
 /**
  * Profile Completion Controller (Stage 2)
  */
-export const completeProfile = asyncHandler(async (req: Request, res: Response) => {
-    const { userId, category, metadata, firstName, lastName, bio } = req.body;
+export const completeProfile = asyncHandler(async (req: AuthRequest, res: Response) => {
+    const { category, metadata, firstName, lastName, bio } = req.body;
+    const userId = req.user?.id;
+
+    if (!userId) throw new AppError('User not authenticated', 401);
 
     const updatedProfile = await prisma.profile.update({
         where: { userId },
@@ -197,6 +201,11 @@ export const completeProfile = asyncHandler(async (req: Request, res: Response) 
  * Diagnostic Test Email Controller
  */
 export const testEmail = asyncHandler(async (req: Request, res: Response) => {
+    // Only allow in development
+    if (process.env.NODE_ENV === 'production') {
+        throw new AppError('This diagnostic route is disabled in production', 403);
+    }
+
     const { email } = req.body;
     if (!email) throw new AppError('Email is required', 400);
 

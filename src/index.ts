@@ -14,14 +14,40 @@ import { setupSwagger } from './utils/swagger.js';
 const app = express();
 const PORT = process.env.PORT || 5000;
 
-// CORS Configuration - Simple and reliable defaults for debugging
-app.use(cors());
-
-// Diagnostic Middleware
-app.use((req, res, next) => {
-    console.log(`[${new Date().toISOString()}] ${req.method} ${req.url} - Host: ${req.headers.host} - Origin: ${req.headers.origin}`);
-    next();
+// 🛡️ Rate Limiting - Prevent brute-force attacks
+import { rateLimit } from 'express-rate-limit';
+const authLimiter = rateLimit({
+    windowMs: 15 * 60 * 1000, // 15 minutes
+    max: 100, // Limit each IP to 100 requests per `window` (here, per 15 minutes)
+    standardHeaders: true, // Return rate limit info in the `RateLimit-*` headers
+    legacyHeaders: false, // Disable the `X-RateLimit-*` headers
+    message: {
+        success: false,
+        message: 'Too many requests from this IP, please try again after 15 minutes'
+    }
 });
+
+// Apply rate limiting to all auth routes
+app.use('/api/auth', authLimiter);
+
+// 🌐 CORS Configuration - Restrictive Whitelist
+const allowedOrigins = process.env.ALLOWED_ORIGINS?.split(',') || ['http://localhost:3000', 'http://localhost:3001'];
+app.use(cors({
+    origin: (origin, callback) => {
+        // Allow requests with no origin (like mobile apps or curl)
+        if (!origin) return callback(null, true);
+
+        if (allowedOrigins.indexOf(origin) !== -1) {
+            callback(null, true);
+        } else {
+            console.error(`[🚨 CORS BLOCK]: Request from origin ${origin} was rejected`);
+            callback(new Error('Not allowed by CORS'));
+        }
+    },
+    credentials: true,
+    methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
+    allowedHeaders: ['Content-Type', 'Authorization']
+}));
 
 // Security headers (with relaxed settings for API documentation and cross-origin access)
 app.use(helmet({
@@ -31,7 +57,7 @@ app.use(helmet({
 }));
 
 app.use(morgan('dev')); // Dev-style logging
-app.use(express.json()); // Parses JSON bodies
+app.use(express.json({ limit: '10kb' })); // Parses JSON bodies and limits size
 
 // ROOT API ENDPOINT
 app.get('/', (req, res) => {
