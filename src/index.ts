@@ -31,22 +31,34 @@ const authLimiter = rateLimit({
 app.use('/api/auth', authLimiter);
 
 // 🌐 CORS Configuration - Restrictive Whitelist
-const allowedOrigins = process.env.ALLOWED_ORIGINS?.split(',') || ['http://localhost:3000', 'http://localhost:3001', 'https://proventures.vercel.app'];
+const allowedOrigins = [
+    'http://localhost:3000',
+    'http://localhost:3001',
+    'https://proventures.vercel.app',
+    'https://proven-app.vercel.app',
+    ...(process.env.ALLOWED_ORIGINS?.split(',') || [])
+].map(origin => origin.trim());
+
 app.use(cors({
     origin: (origin, callback) => {
         // Allow requests with no origin (like mobile apps or curl)
         if (!origin) return callback(null, true);
 
-        if (allowedOrigins.indexOf(origin) !== -1) {
+        const isAllowed = allowedOrigins.some(allowedOrigin => {
+            return allowedOrigin === origin || origin.endsWith('.vercel.app');
+        });
+
+        if (isAllowed || process.env.NODE_ENV === 'development') {
             callback(null, true);
         } else {
-            console.error(`[🚨 CORS BLOCK]: Request from origin ${origin} was rejected`);
+            console.error(`[🚨 CORS BLOCK]: Request from origin ${origin} was rejected. Allowed: ${allowedOrigins.join(', ')}`);
             callback(new Error('Not allowed by CORS'));
         }
     },
     credentials: true,
     methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
-    allowedHeaders: ['Content-Type', 'Authorization']
+    allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With', 'Accept'],
+    exposedHeaders: ['Set-Cookie']
 }));
 
 // Security headers (with relaxed settings for API documentation and cross-origin access)
