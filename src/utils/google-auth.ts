@@ -9,10 +9,15 @@ const client = new OAuth2Client(process.env.GOOGLE_CLIENT_ID);
  * @returns The user's Google profile information.
  */
 export async function verifyGoogleToken(token: string) {
+    const clientId = process.env.GOOGLE_CLIENT_ID;
+    if (!clientId) {
+        throw new AppError('Google Client ID is not configured on the server', 500);
+    }
+
     try {
         const ticket = await client.verifyIdToken({
             idToken: token,
-            audience: process.env.GOOGLE_CLIENT_ID,
+            audience: clientId,
         });
 
         const payload = ticket.getPayload();
