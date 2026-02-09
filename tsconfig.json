@@ -39,5 +39,5 @@
   "include": [
     "src/**/*",
     "prisma.config.ts"
-  ]
+, "test-redis.ts"  ]
 }

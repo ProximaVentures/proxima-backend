@@ -10,6 +10,7 @@ import type { RegisterInput, LoginInput, socialLoginSchema } from '../validators
 import { z } from 'zod';
 type SocialLoginInput = z.infer<typeof socialLoginSchema>;
 import redis from '../utils/redis.js';
+import { verifyGoogleToken } from '../utils/google-auth.js';
 
 /**
  * Register Controller (Stage 1)
@@ -121,7 +122,7 @@ export const login = asyncHandler(async (req: Request<{}, {}, LoginInput>, res: 
     }
 
     // Generate JWT
-    const token = jwt.sign(
+    const authToken = jwt.sign(
         { userId: user.id, role: user.role },
         process.env.JWT_SECRET || 'secret',
         { expiresIn: '1d' }
@@ -130,7 +131,7 @@ export const login = asyncHandler(async (req: Request<{}, {}, LoginInput>, res: 
     res.status(200).json({
         success: true,
         message: 'Login successful',
-        token,
+        token: authToken,
         data: {
             user: {
                 id: user.id,
@@ -209,7 +210,7 @@ export const testEmail = asyncHandler(async (req: Request, res: Response) => {
     const { email } = req.body;
     if (!email) throw new AppError('Email is required', 400);
 
-    console.log(`[🧪 TEST EMAIL]: Request for ${email}`);
+    // console.log(`[🧪 TEST EMAIL]: Request for ${email}`);
     const success = await sendOTPEmail(email, '123456');
 
     if (success) {
@@ -223,7 +224,22 @@ export const testEmail = asyncHandler(async (req: Request, res: Response) => {
  * Social Login Controller
  */
 export const socialLogin = asyncHandler(async (req: Request<{}, {}, SocialLoginInput>, res: Response) => {
-    const { email, name, provider, providerId, image } = req.body;
+    const { email: providedEmail, name, provider, providerId, image, token: socialToken } = req.body;
+    let email = providedEmail;
+
+    // 1. Secure Verification for Google
+    if (provider === 'google' && socialToken) {
+        try {
+            const googleProfile = await verifyGoogleToken(socialToken);
+            email = googleProfile.email || email;
+            // Additional check: providerId should match the 'sub' (Google ID)
+            if (googleProfile.sub !== providerId) {
+                throw new AppError('Google verification failed: User ID mismatch', 401);
+            }
+        } catch (error) {
+            throw new AppError('Google identity verification failed.', 401);
+        }
+    }
 
     let user = await prisma.user.findUnique({
         where: { email },
@@ -231,25 +247,39 @@ export const socialLogin = asyncHandler(async (req: Request<{}, {}, SocialLoginI
     });
 
     if (!user) {
+        // 2. Extract profile details from Google if not provided in request body
+        let finalName = name;
+        let finalImage = image;
+
+        if (provider === 'google' && socialToken) {
+            try {
+                const googleProfile = await verifyGoogleToken(socialToken);
+                finalName = finalName || googleProfile.name || 'ProVen User';
+                finalImage = finalImage || googleProfile.picture;
+            } catch (err) {
+                console.error("Secondary Google verify failed:", err);
+            }
+        }
+
         // Create new user for social signup
         const result = await prisma.$transaction(async (tx) => {
             const newUser = await tx.user.create({
                 data: {
                     email,
-                    username: name.toLowerCase().replace(/\s+/g, '_') + Math.floor(Math.random() * 1000),
+                    username: (finalName || 'user').toLowerCase().replace(/\s+/g, '_') + Math.floor(Math.random() * 1000),
                     isVerified: true, // Social users are pre-verified
                     provider,
                     providerId,
-                    role: 'CLIENT', // Default role for searchers
+                    role: 'CLIENT', // Default role for searchers as requested
                 },
             });
 
             await tx.profile.create({
                 data: {
                     userId: newUser.id,
-                    firstName: name.split(' ')[0] || null,
-                    lastName: name.split(' ').slice(1).join(' ') || null,
-                    avatarUrl: image || null,
+                    firstName: finalName?.split(' ')[0] || null,
+                    lastName: finalName?.split(' ').slice(1).join(' ') || null,
+                    avatarUrl: finalImage || null,
                 },
             });
 
@@ -280,7 +310,7 @@ export const socialLogin = asyncHandler(async (req: Request<{}, {}, SocialLoginI
     if (!user) throw new AppError('User not found', 404);
 
     // Generate JWT
-    const token = jwt.sign(
+    const authToken = jwt.sign(
         { userId: user.id, role: user.role },
         process.env.JWT_SECRET || 'secret',
         { expiresIn: '1d' }
@@ -289,14 +319,62 @@ export const socialLogin = asyncHandler(async (req: Request<{}, {}, SocialLoginI
     res.status(200).json({
         success: true,
         message: 'Social login successful',
-        token,
+        token: authToken,
         data: {
             user: {
                 id: user.id,
                 email: user.email,
                 role: user.role,
                 onboardingComplete: user.profile?.onboardingComplete || false,
+                hasSeenRolePrompt: user.profile?.hasSeenRolePrompt || false,
             },
         },
+    });
+});
+
+/**
+ * Update User Role Controller
+ */
+export const updateRole = asyncHandler(async (req: AuthRequest, res: Response) => {
+    const { role } = req.body;
+    const userId = req.user?.id;
+
+    if (!userId) throw new AppError('User not authenticated', 401);
+    if (!['CLIENT', 'PROFESSIONAL'].includes(role)) {
+        throw new AppError('Invalid role specified', 400);
+    }
+
+    const updatedUser = await prisma.user.update({
+        where: { id: userId },
+        data: { role },
+        include: { profile: true }
+    });
+
+    res.status(200).json({
+        success: true,
+        message: `Role updated to ${role} successfully.`,
+        data: {
+            role: updatedUser.role,
+            onboardingComplete: updatedUser.profile?.onboardingComplete || false
+        }
+    });
+});
+
+/**
+ * Dismiss Role Prompt Controller
+ */
+export const dismissRolePrompt = asyncHandler(async (req: AuthRequest, res: Response) => {
+    const userId = req.user?.id;
+
+    if (!userId) throw new AppError('User not authenticated', 401);
+
+    await prisma.profile.update({
+        where: { userId },
+        data: { hasSeenRolePrompt: true }
+    });
+
+    res.status(200).json({
+        success: true,
+        message: 'Role prompt dismissed.'
     });
 });

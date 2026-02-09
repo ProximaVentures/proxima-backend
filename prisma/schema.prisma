@@ -66,6 +66,7 @@ model Profile {
   category        ProfessionalCategory?
   vettingStatus   VettingStatus         @default(PENDING)
   onboardingComplete Boolean            @default(false)
+  hasSeenRolePrompt Boolean             @default(false)
   
   // Utilize JSONB for extensible, category-specific metadata.
   metadata        Json?                 @default("{}")

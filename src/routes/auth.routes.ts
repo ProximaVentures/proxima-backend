@@ -56,4 +56,16 @@ router.post(
     authController.completeProfile
 );
 
+router.patch(
+    '/update-role',
+    protect,
+    authController.updateRole
+);
+
+router.post(
+    '/dismiss-role-prompt',
+    protect,
+    authController.dismissRolePrompt
+);
+
 export default router;

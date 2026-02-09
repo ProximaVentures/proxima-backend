@@ -1,4 +1,4 @@
-# ProVen Frontend Integration Guide
+ ProVen Frontend Integration Guide
 
 This document guides the Frontend Team on how to integrate with the ProProven Backend, specifically focusing on the Authentication and Onboarding flow.
 

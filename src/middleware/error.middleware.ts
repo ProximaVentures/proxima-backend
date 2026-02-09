@@ -12,14 +12,27 @@ export class AppError extends Error {
 }
 
 export const errorHandler = (err: any, req: Request, res: Response, next: NextFunction) => {
-    const statusCode = err.statusCode || 500;
-    const message = err.message || 'Internal Server Error';
+    let statusCode = err.statusCode || 500;
+    let message = err.message || 'Internal Server Error';
 
-    console.error(`[🚨 ERROR]: ${message}`);
+    // 🛡️ Security Hardening: Sanitize all 500+ errors for production
+    if (process.env.NODE_ENV === 'production') {
+        if ((err.code && err.code.startsWith('P')) || statusCode >= 500) {
+            message = "We're perfecting your experience. Connection interrupted, please try again.";
+            statusCode = 500;
+        }
+    }
+
+    console.error(`[🚨 ERROR]: ${err.message}`, {
+        stack: err.stack,
+        path: req.path,
+        method: req.method
+    });
 
     res.status(statusCode).json({
         success: false,
         message,
+        // Only show stack in development
         stack: process.env.NODE_ENV === 'development' ? err.stack : undefined,
     });
 };

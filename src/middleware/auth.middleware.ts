@@ -62,8 +62,13 @@ export const protect = async (req: AuthRequest, res: Response, next: NextFunctio
         };
 
         next();
-    } catch (error) {
-        return next(new AppError('Token is invalid or expired', 401));
+    } catch (error: any) {
+        if (error.name === 'TokenExpiredError' || error.name === 'JsonWebTokenError') {
+            return next(new AppError('Token is invalid or expired', 401));
+        }
+
+        console.error('[🚨 AUTH MIDDLEWARE ERROR]:', error);
+        return next(new AppError('Internal authentication error', 500));
     }
 };
 

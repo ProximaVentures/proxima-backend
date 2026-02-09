@@ -197,6 +197,7 @@ export const socialLoginSchema = z.object({
     provider: z.enum(['google', 'facebook']),
     providerId: z.string().min(1),
     image: z.string().url().optional(),
+    token: z.string().optional(), // Added for secure backend verification
 });
 
 export type RegisterInput = z.infer<typeof registerSchema>;
