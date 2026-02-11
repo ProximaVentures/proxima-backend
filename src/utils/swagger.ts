@@ -241,6 +241,84 @@ const swaggerDocument = {
                     403: { description: 'Forbidden: Onboarding incomplete' }
                 }
             }
+        },
+        '/api/projects': {
+            post: {
+                summary: 'Create a Standard Project',
+                tags: ['Projects'],
+                security: [{ bearerAuth: [] }],
+                requestBody: {
+                    required: true,
+                    content: {
+                        'application/json': {
+                            schema: {
+                                type: 'object',
+                                properties: {
+                                    title: { type: 'string' },
+                                    description: { type: 'string' },
+                                    targetAudience: { type: 'string' },
+                                    industry: { type: 'array', items: { type: 'string' } },
+                                    requirements: { type: 'string' },
+                                    specificNotes: { type: 'string' },
+                                    budgetRange: { type: 'string', enum: ['UNDER_5K', 'FROM_5K_TO_10K', 'FROM_10K_TO_25K', 'FROM_25K_TO_50K', 'ABOVE_50K'] },
+                                    timeline: { type: 'string', enum: ['UNDER_1_MONTH', 'FROM_1_TO_3_MONTHS', 'FROM_3_TO_6_MONTHS', 'ABOVE_6_MONTHS'] }
+                                },
+                                required: ['title', 'description', 'targetAudience', 'industry', 'requirements', 'budgetRange', 'timeline']
+                            }
+                        }
+                    }
+                },
+                responses: {
+                    201: { description: 'Project created successfully' },
+                    401: { description: 'Unauthorized' }
+                }
+            }
+        },
+        '/api/projects/pitches': {
+            post: {
+                summary: 'Create an Investment Pitch',
+                tags: ['Projects'],
+                security: [{ bearerAuth: [] }],
+                requestBody: {
+                    required: true,
+                    content: {
+                        'application/json': {
+                            schema: {
+                                type: 'object',
+                                properties: {
+                                    problemStatement: { type: 'string' },
+                                    proposedSolution: { type: 'string' },
+                                    usp: { type: 'string' },
+                                    marketSize: { type: 'string' },
+                                    traction: { type: 'string' },
+                                    competitors: { type: 'string' },
+                                    fundingAmount: { type: 'string' },
+                                    equityOffered: { type: 'string' },
+                                    useOfFunds: { type: 'string' },
+                                    pitchDeckUrl: { type: 'string', format: 'url' },
+                                    businessPlanUrl: { type: 'string', format: 'url' }
+                                },
+                                required: ['problemStatement', 'proposedSolution', 'usp', 'marketSize', 'fundingAmount', 'equityOffered', 'useOfFunds', 'pitchDeckUrl']
+                            }
+                        }
+                    }
+                },
+                responses: {
+                    201: { description: 'Investment pitch created successfully' },
+                    401: { description: 'Unauthorized' }
+                }
+            }
+        },
+        '/api/projects/my-submissions': {
+            get: {
+                summary: 'Get My Project Submissions',
+                tags: ['Projects'],
+                security: [{ bearerAuth: [] }],
+                responses: {
+                    200: { description: 'Submissions retrieved successfully' },
+                    401: { description: 'Unauthorized' }
+                }
+            }
         }
     },
 };

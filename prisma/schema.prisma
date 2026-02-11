@@ -37,6 +37,35 @@ enum VettingStatus {
   REJECTED
 }
 
+enum ProjectStatus {
+  PENDING
+  REVIEWING
+  ACTIVE
+  COMPLETED
+}
+
+enum PitchStatus {
+  PENDING
+  REVIEWING
+  APPROVED
+  REJECTED
+}
+
+enum BudgetTier {
+  UNDER_5K
+  FROM_5K_TO_10K
+  FROM_10K_TO_25K
+  FROM_25K_TO_50K
+  ABOVE_50K
+}
+
+enum TimelineTier {
+  UNDER_1_MONTH
+  FROM_1_TO_3_MONTHS
+  FROM_3_TO_6_MONTHS
+  ABOVE_6_MONTHS
+}
+
 model User {
   id            String    @id @default(cuid())
   email         String    @unique
@@ -51,6 +80,8 @@ model User {
   updatedAt     DateTime  @updatedAt
   otps          OTP[]
   profile       Profile?
+  projects      Project[]
+  pitches       InvestmentPitch[]
 }
 
 model Profile {
@@ -80,4 +111,41 @@ model OTP {
   user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
   expiresAt DateTime
   createdAt DateTime @default(now())
+}
+
+model Project {
+  id             String        @id @default(cuid())
+  title          String
+  description    String        @db.Text
+  targetAudience String
+  industry       String[]
+  requirements   String        @db.Text
+  specificNotes  String?       @db.Text
+  budgetRange    BudgetTier
+  timeline       TimelineTier
+  status         ProjectStatus @default(PENDING)
+  clientId       String
+  client         User          @relation(fields: [clientId], references: [id], onDelete: Cascade)
+  createdAt      DateTime      @default(now())
+  updatedAt      DateTime      @updatedAt
+}
+
+model InvestmentPitch {
+  id                String      @id @default(cuid())
+  problemStatement  String      @db.Text
+  proposedSolution  String      @db.Text
+  usp               String      @db.Text
+  marketSize        String
+  traction          String?     @db.Text
+  competitors       String?     @db.Text
+  fundingAmount     String
+  equityOffered     String
+  useOfFunds        String      @db.Text
+  pitchDeckUrl      String
+  businessPlanUrl   String?
+  status            PitchStatus @default(PENDING)
+  clientId          String
+  client            User        @relation(fields: [clientId], references: [id], onDelete: Cascade)
+  createdAt         DateTime    @default(now())
+  updatedAt         DateTime    @updatedAt
 }

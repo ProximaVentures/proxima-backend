@@ -9,6 +9,7 @@ import { errorHandler } from './middleware/error.middleware.js';
 import authRoutes from './routes/auth.routes.js';
 import profileRoutes from './routes/profile.routes.js';
 import adminRoutes from './routes/admin.routes.js';
+import projectRoutes from './routes/project.routes.js';
 import { setupSwagger } from './utils/swagger.js';
 
 const app = express();
@@ -100,6 +101,7 @@ app.get('/health', (req, res) => {
 app.use('/api/auth', authRoutes);
 app.use('/api/profile', profileRoutes);
 app.use('/api/admin', adminRoutes);
+app.use('/api/projects', projectRoutes);
 
 // SWAGGER DOCS - Setup before listen so it's available immediately
 setupSwagger(app);
