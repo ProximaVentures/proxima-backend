@@ -260,8 +260,8 @@ const swaggerDocument = {
                                     industry: { type: 'array', items: { type: 'string' } },
                                     requirements: { type: 'string' },
                                     specificNotes: { type: 'string' },
-                                    budgetRange: { type: 'string', enum: ['UNDER_5K', 'FROM_5K_TO_10K', 'FROM_10K_TO_25K', 'FROM_25K_TO_50K', 'ABOVE_50K'] },
-                                    timeline: { type: 'string', enum: ['UNDER_1_MONTH', 'FROM_1_TO_3_MONTHS', 'FROM_3_TO_6_MONTHS', 'ABOVE_6_MONTHS'] }
+                                    budgetRange: { type: 'string', enum: ["<5k", "5k-10k", "10k-25k", "25k-50k", "50k+"] },
+                                    timeline: { type: 'string', enum: ["<1_month", "1-3_months", "3-6_months", "6_months+"] }
                                 },
                                 required: ['title', 'description', 'targetAudience', 'industry', 'requirements', 'budgetRange', 'timeline']
                             }

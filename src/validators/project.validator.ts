@@ -8,8 +8,8 @@ export const projectSchema = z.object({
     industry: z.array(z.string()).min(1, "Select at least one industry/domain"),
     requirements: z.string().min(20, "List the core requirements or deliverables"),
     specificNotes: z.string().optional(),
-    budgetRange: z.enum(["UNDER_5K", "FROM_5K_TO_10K", "FROM_10K_TO_25K", "FROM_25K_TO_50K", "ABOVE_50K"]),
-    timeline: z.enum(["UNDER_1_MONTH", "FROM_1_TO_3_MONTHS", "FROM_3_TO_6_MONTHS", "ABOVE_6_MONTHS"]),
+    budgetRange: z.enum(["<5k", "5k-10k", "10k-25k", "25k-50k", "50k+"]),
+    timeline: z.enum(["<1_month", "1-3_months", "3-6_months", "6_months+"]),
 });
 
 export const investmentPitchSchema = z.object({
