@@ -10,7 +10,13 @@ const router = Router();
 
 router.use(protect, authorize(Role.ADMIN));
 
+
 router.get('/professionals/pending', adminController.getPendingProfessionals);
 router.patch('/professionals/:id/vet', adminController.vetProfessional);
+
+// Project Management
+router.get('/projects', adminController.getAllProjects);
+router.patch('/projects/:id/status', adminController.updateProjectStatus);
+router.post('/projects/:id/assign', adminController.assignProfessional);
 
 export default router;

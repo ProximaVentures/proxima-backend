@@ -319,6 +319,81 @@ const swaggerDocument = {
                     401: { description: 'Unauthorized' }
                 }
             }
+        },
+        '/api/admin/projects': {
+            get: {
+                summary: 'Get All Projects (Admin)',
+                tags: ['Admin'],
+                security: [{ bearerAuth: [] }],
+                parameters: [
+                    { in: 'query', name: 'status', schema: { type: 'string', enum: ['PENDING', 'REVIEWING', 'ACTIVE', 'COMPLETED', 'CANCELLED', 'REJECTED'] } },
+                    { in: 'query', name: 'page', schema: { type: 'integer', default: 1 } },
+                    { in: 'query', name: 'limit', schema: { type: 'integer', default: 10 } }
+                ],
+                responses: {
+                    200: { description: 'Projects retrieved successfully' },
+                    403: { description: 'Forbidden: Admin only' }
+                }
+            }
+        },
+        '/api/admin/projects/{id}/status': {
+            patch: {
+                summary: 'Update Project Status',
+                tags: ['Admin'],
+                security: [{ bearerAuth: [] }],
+                parameters: [
+                    { in: 'path', name: 'id', required: true, schema: { type: 'string' } }
+                ],
+                requestBody: {
+                    required: true,
+                    content: {
+                        'application/json': {
+                            schema: {
+                                type: 'object',
+                                properties: {
+                                    status: { type: 'string', enum: ['PENDING', 'REVIEWING', 'ACTIVE', 'COMPLETED', 'CANCELLED', 'REJECTED'] }
+                                },
+                                required: ['status']
+                            }
+                        }
+                    }
+                },
+                responses: {
+                    200: { description: 'Project status updated' },
+                    403: { description: 'Forbidden: Admin only' },
+                    404: { description: 'Project not found' }
+                }
+            }
+        },
+        '/api/admin/projects/{id}/assign': {
+            post: {
+                summary: 'Assign Professional to Project',
+                tags: ['Admin'],
+                security: [{ bearerAuth: [] }],
+                parameters: [
+                    { in: 'path', name: 'id', required: true, schema: { type: 'string' } }
+                ],
+                requestBody: {
+                    required: true,
+                    content: {
+                        'application/json': {
+                            schema: {
+                                type: 'object',
+                                properties: {
+                                    professionalId: { type: 'string' },
+                                    role: { type: 'string', example: 'Lead Developer' }
+                                },
+                                required: ['professionalId']
+                            }
+                        }
+                    }
+                },
+                responses: {
+                    201: { description: 'Professional assigned successfully' },
+                    400: { description: 'Invalid professional or not vetted' },
+                    403: { description: 'Forbidden: Admin only' }
+                }
+            }
         }
     },
 };

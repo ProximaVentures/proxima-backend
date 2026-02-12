@@ -43,6 +43,8 @@ enum ProjectStatus {
   REVIEWING
   ACTIVE
   COMPLETED
+  CANCELLED
+  REJECTED
 }
 
 enum PitchStatus {
@@ -83,6 +85,7 @@ model User {
   profile       Profile?
   projects      Project[]
   pitches       InvestmentPitch[]
+  assignments   ProjectAssignment[]
 }
 
 model Profile {
@@ -129,6 +132,20 @@ model Project {
   client         User          @relation(fields: [clientId], references: [id], onDelete: Cascade)
   createdAt      DateTime      @default(now())
   updatedAt      DateTime      @updatedAt
+  assignments    ProjectAssignment[]
+}
+
+model ProjectAssignment {
+  id        String   @id @default(cuid())
+  projectId String
+  project   Project  @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  role      String?
+  status    String   @default("ACTIVE")
+  assignedAt DateTime @default(now())
+
+  @@unique([projectId, userId])
 }
 
 model InvestmentPitch {

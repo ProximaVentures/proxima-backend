@@ -26,5 +26,10 @@ export const investmentPitchSchema = z.object({
     businessPlanUrl: z.string().url().optional(),
 });
 
+export const projectUpdateSchema = projectSchema.partial();
+export const investmentPitchUpdateSchema = investmentPitchSchema.partial();
+
 export type ProjectInput = z.infer<typeof projectSchema>;
+export type ProjectUpdateInput = z.infer<typeof projectUpdateSchema>;
 export type InvestmentPitchInput = z.infer<typeof investmentPitchSchema>;
+export type InvestmentPitchUpdateInput = z.infer<typeof investmentPitchUpdateSchema>;

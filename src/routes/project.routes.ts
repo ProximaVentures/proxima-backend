@@ -2,7 +2,7 @@ import { Router } from 'express';
 import * as projectController from '../controllers/project.controller.js';
 import { protect } from '../middleware/auth.middleware.js';
 import { validate } from '../middleware/validate.middleware.js';
-import { projectSchema, investmentPitchSchema } from '../validators/project.validator.js';
+import { projectSchema, investmentPitchSchema, projectUpdateSchema, investmentPitchUpdateSchema } from '../validators/project.validator.js';
 
 const router = Router();
 
@@ -19,6 +19,18 @@ router.post(
     '/pitches',
     validate(investmentPitchSchema),
     projectController.createInvestmentPitch
+);
+
+router.patch(
+    '/:id',
+    validate(projectUpdateSchema),
+    projectController.updateProject
+);
+
+router.patch(
+    '/pitches/:id',
+    validate(investmentPitchUpdateSchema),
+    projectController.updateInvestmentPitch
 );
 
 router.get(

@@ -63,3 +63,105 @@ export const vetProfessional = asyncHandler(async (req: Request, res: Response) 
         data: updatedProfile,
     });
 });
+
+/**
+ * Get All Projects (Admin)
+ */
+export const getAllProjects = asyncHandler(async (req: Request, res: Response) => {
+    const { status, page = 1, limit = 10 } = req.query;
+    const skip = (Number(page) - 1) * Number(limit);
+
+    const where: any = {};
+    if (status && typeof status === 'string') {
+        where.status = status;
+    }
+
+    const projects = await prisma.project.findMany({
+        where,
+        include: {
+            client: { select: { id: true, email: true, username: true } },
+            assignments: {
+                include: {
+                    user: { select: { id: true, email: true, username: true, profile: { select: { firstName: true, lastName: true } } } }
+                }
+            }
+        },
+        skip,
+        take: Number(limit),
+        orderBy: { createdAt: 'desc' }
+    });
+
+    const total = await prisma.project.count({ where });
+
+    res.status(200).json({
+        success: true,
+        count: projects.length,
+        total,
+        totalPages: Math.ceil(total / Number(limit)),
+        currentPage: Number(page),
+        data: projects
+    });
+});
+
+/**
+ * Update Project Status
+ */
+export const updateProjectStatus = asyncHandler(async (req: Request, res: Response) => {
+    const { id } = req.params;
+    const { status } = req.body;
+
+    // Validate Status Logic if needed (e.g. can't go from COMPLETED to PENDING)
+
+    const project = await prisma.project.update({
+        where: { id },
+        data: { status }
+    });
+
+    // Notify Client via Email (Optional but good UX)
+    // await sendEmail(project.client.email, "Project Status Update", `Your project status is now ${status}`);
+
+    res.status(200).json({
+        success: true,
+        data: project
+    });
+});
+
+/**
+ * Assign Professional to Project
+ */
+export const assignProfessional = asyncHandler(async (req: Request, res: Response) => {
+    const { id } = req.params; // Project ID
+    const { professionalId, role } = req.body;
+
+    // Verify Professional exists and is VETTED
+    const professional = await prisma.user.findUnique({
+        where: { id: professionalId },
+        include: { profile: true }
+    });
+
+    if (!professional || professional.role !== 'PROFESSIONAL') {
+        throw new AppError('Invalid professional ID', 400);
+    }
+
+    // Check if professional is vetted (Optional strictness)
+    if (professional.profile?.vettingStatus !== 'VETTED') {
+        throw new AppError('Professional is not vetted yet', 400);
+    }
+
+    const assignment = await prisma.projectAssignment.create({
+        data: {
+            projectId: id,
+            userId: professionalId,
+            role: role || 'Contributor'
+        }
+    });
+
+    // Notify Professional
+    // await sendEmail(professional.email, "New Project Assignment", `You have been assigned to project...`);
+
+    res.status(201).json({
+        success: true,
+        message: 'Professional assigned successfully',
+        data: assignment
+    });
+});

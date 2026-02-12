@@ -99,4 +99,111 @@ export const getMySubmissions = asyncHandler(async (req: AuthRequest, res: Respo
             pitches,
         },
     });
+    res.status(200).json({
+        success: true,
+        data: {
+            projects,
+            pitches,
+        },
+    });
+});
+
+/**
+ * Update Standard Project
+ */
+export const updateProject = asyncHandler(async (req: AuthRequest, res: Response) => {
+    const userId = req.user?.id;
+    const projectId = req.params.id;
+
+    if (!userId) throw new AppError('Unauthorized', 401);
+
+    // Check ownership
+    const existingProject = await prisma.project.findUnique({
+        where: { id: projectId },
+    });
+
+    if (!existingProject) {
+        throw new AppError('Project not found', 404);
+    }
+
+    if (existingProject.clientId !== userId) {
+        throw new AppError('You are not authorized to update this project', 403);
+    }
+
+    const data = req.body as Partial<ProjectInput>;
+
+    // Handle map budget and timeline if they are present
+    // Remove undefined values to please Prisma types
+    const updateData: any = {};
+
+    Object.keys(data).forEach(key => {
+        const value = data[key as keyof ProjectInput];
+        if (value !== undefined) {
+            updateData[key] = value;
+        }
+    });
+
+    if (data.budgetRange) {
+        updateData.budgetRange = mapBudget(data.budgetRange);
+    }
+
+    if (data.timeline) {
+        updateData.timeline = mapTimeline(data.timeline);
+    }
+
+    const project = await prisma.project.update({
+        where: { id: projectId },
+        data: updateData,
+    });
+
+    res.status(200).json({
+        success: true,
+        message: 'Project updated successfully!',
+        data: project,
+    });
+});
+
+/**
+ * Update Investment Pitch
+ */
+export const updateInvestmentPitch = asyncHandler(async (req: AuthRequest, res: Response) => {
+    const userId = req.user?.id;
+    const pitchId = req.params.id;
+
+    if (!userId) throw new AppError('Unauthorized', 401);
+
+    // Check ownership
+    const existingPitch = await prisma.investmentPitch.findUnique({
+        where: { id: pitchId },
+    });
+
+    if (!existingPitch) {
+        throw new AppError('Pitch not found', 404);
+    }
+
+    if (existingPitch.clientId !== userId) {
+        throw new AppError('You are not authorized to update this pitch', 403);
+    }
+
+    const data = req.body as Partial<InvestmentPitchInput>;
+
+    // Remove undefined values
+    const updateData: any = {};
+    Object.keys(data).forEach(key => {
+        const value = data[key as keyof InvestmentPitchInput];
+        if (value !== undefined) {
+            updateData[key] = value;
+        }
+    });
+
+    const pitch = await prisma.investmentPitch.update({
+        where: { id: pitchId },
+        data: updateData,
+    });
+
+    res.status(200).json({
+        success: true,
+        message: 'Investment pitch updated successfully!',
+        data: pitch,
+    });
 });
