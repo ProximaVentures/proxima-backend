@@ -68,11 +68,14 @@ export const vetProfessional = asyncHandler(async (req: Request, res: Response) 
  * Get All Projects (Admin)
  */
 export const getAllProjects = asyncHandler(async (req: Request, res: Response) => {
-    const { status, page = 1, limit = 10 } = req.query;
-    const skip = (Number(page) - 1) * Number(limit);
+    const status = typeof req.query.status === 'string' ? req.query.status : undefined;
+    const page = typeof req.query.page === 'string' ? parseInt(req.query.page) : 1;
+    const limit = typeof req.query.limit === 'string' ? parseInt(req.query.limit) : 10;
+
+    const skip = (page - 1) * limit;
 
     const where: any = {};
-    if (status && typeof status === 'string') {
+    if (status) {
         where.status = status;
     }
 
@@ -107,7 +110,7 @@ export const getAllProjects = asyncHandler(async (req: Request, res: Response) =
  * Update Project Status
  */
 export const updateProjectStatus = asyncHandler(async (req: Request, res: Response) => {
-    const { id } = req.params;
+    const id = req.params.id as string;
     const { status } = req.body;
 
     // Validate Status Logic if needed (e.g. can't go from COMPLETED to PENDING)
@@ -130,7 +133,7 @@ export const updateProjectStatus = asyncHandler(async (req: Request, res: Respon
  * Assign Professional to Project
  */
 export const assignProfessional = asyncHandler(async (req: Request, res: Response) => {
-    const { id } = req.params; // Project ID
+    const id = req.params.id as string; // Project ID
     const { professionalId, role } = req.body;
 
     // Verify Professional exists and is VETTED

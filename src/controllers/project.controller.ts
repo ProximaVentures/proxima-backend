@@ -33,6 +33,19 @@ const mapTimeline = (timeline: string): TimelineTier => {
 };
 
 /**
+ * Remove undefined properties from an object to satisfy exactOptionalPropertyTypes
+ */
+const cleanData = <T extends Record<string, any>>(data: T): T => {
+    const cleaned: any = {};
+    for (const key of Object.keys(data)) {
+        if (data[key] !== undefined) {
+            cleaned[key] = data[key];
+        }
+    }
+    return cleaned;
+};
+
+/**
  * Create Standard Project
  */
 export const createProject = asyncHandler(async (req: AuthRequest, res: Response) => {
@@ -42,12 +55,12 @@ export const createProject = asyncHandler(async (req: AuthRequest, res: Response
     const data = req.body as ProjectInput;
 
     const project = await prisma.project.create({
-        data: {
+        data: cleanData({
             ...data,
             budgetRange: mapBudget(data.budgetRange),
             timeline: mapTimeline(data.timeline),
             clientId: userId,
-        },
+        }) as any,
     });
 
     res.status(201).json({
@@ -67,10 +80,10 @@ export const createInvestmentPitch = asyncHandler(async (req: AuthRequest, res: 
     const data = req.body as InvestmentPitchInput;
 
     const pitch = await prisma.investmentPitch.create({
-        data: {
+        data: cleanData({
             ...data,
             clientId: userId,
-        },
+        }) as any,
     });
 
     res.status(201).json({
@@ -113,7 +126,7 @@ export const getMySubmissions = asyncHandler(async (req: AuthRequest, res: Respo
  */
 export const updateProject = asyncHandler(async (req: AuthRequest, res: Response) => {
     const userId = req.user?.id;
-    const projectId = req.params.id;
+    const projectId = req.params.id as string;
 
     if (!userId) throw new AppError('Unauthorized', 401);
 
@@ -168,7 +181,7 @@ export const updateProject = asyncHandler(async (req: AuthRequest, res: Response
  */
 export const updateInvestmentPitch = asyncHandler(async (req: AuthRequest, res: Response) => {
     const userId = req.user?.id;
-    const pitchId = req.params.id;
+    const pitchId = req.params.id as string;
 
     if (!userId) throw new AppError('Unauthorized', 401);
 
