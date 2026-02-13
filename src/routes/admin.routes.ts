@@ -11,8 +11,13 @@ const router = Router();
 router.use(protect, authorize(Role.ADMIN));
 
 
+
 router.get('/professionals/pending', adminController.getPendingProfessionals);
 router.patch('/professionals/:id/vet', adminController.vetProfessional);
+
+// User Management
+router.get('/users', adminController.getAllUsers);
+router.get('/users/stats', adminController.getUserStats);
 
 // Project Management
 router.get('/projects', adminController.getAllProjects);

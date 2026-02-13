@@ -252,6 +252,47 @@ The `metadata` field allows different shapes based on the category.
 
 ---
 
+## 👑 Admin Section (NEW)
+
+The Admin panel allows staff to vet professionals and manage project submissions.
+
+### 🔑 Prerequisite
+Every request to `/api/admin/*` **must** have a JWT token of a user with the `ADMIN` role. If you get a `403 Forbidden`, the account you are logged in with is not an admin.
+
+### 🛠️ Endpoints
+
+#### 1. User Management (NEW)
+- **Fetch All Users**: `GET /api/admin/users`
+  - *Query Params*: `role` (CLIENT/PROFESSIONAL/ADMIN), `page`, `limit`
+- **User Stats**: `GET /api/admin/users/stats`
+  - *Returns*: Total counts for clients, professionals, projects, and pitches.
+
+#### 2. Vetting Professionals
+- **Fetch Pending**: `GET /api/admin/professionals/pending`
+- **Vetting Action**: `PATCH /api/admin/professionals/:id/vet`
+  - **Body**:
+    ```json
+    {
+      "status": "APPROVED", // or "REJECTED" or "NEEDS_CLARIFICATION"
+      "feedback": "Optional message to user"
+    }
+    ```
+
+#### 3. Global Project Management
+- **List All**: `GET /api/admin/projects`
+  - *Query Params*: `status`, `type` (SERVICE/INVESTMENT)
+- **Update Project Status**: `PATCH /api/admin/projects/:id/status`
+  - **Body**: `{ "status": "APPROVED" }`
+- **Manual Assignment**: `POST /api/admin/projects/:id/assign`
+  - **Body**: `{ "professionalId": "uuid-here" }`
+
+### 💡 Pro-Tips for Admin Devs
+1. **Data Density**: Admin tables should be dense. Use `shadcn/ui` Data Tables with sorting and filtering.
+2. **Feedback Loop**: When rejecting a professional, always provide `feedback` so the user knows what to fix.
+3. **Batch Actions**: (Future) We will eventually need to approve multiple projects at once. Keep your UI ready for multi-select.
+
+---
+
 ## 🚨 Error Handling
 
 The backend returns standardized errors.

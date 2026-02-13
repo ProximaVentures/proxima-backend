@@ -394,6 +394,33 @@ const swaggerDocument = {
                     403: { description: 'Forbidden: Admin only' }
                 }
             }
+        },
+        '/api/admin/users': {
+            get: {
+                summary: 'Get All Users (Admin)',
+                tags: ['Admin'],
+                security: [{ bearerAuth: [] }],
+                parameters: [
+                    { in: 'query', name: 'role', schema: { type: 'string', enum: ['CLIENT', 'PROFESSIONAL', 'ADMIN'] } },
+                    { in: 'query', name: 'page', schema: { type: 'integer', default: 1 } },
+                    { in: 'query', name: 'limit', schema: { type: 'integer', default: 10 } }
+                ],
+                responses: {
+                    200: { description: 'Users retrieved successfully' },
+                    403: { description: 'Forbidden: Admin only' }
+                }
+            }
+        },
+        '/api/admin/users/stats': {
+            get: {
+                summary: 'Get User Statistics (Admin)',
+                tags: ['Admin'],
+                security: [{ bearerAuth: [] }],
+                responses: {
+                    200: { description: 'Statistics retrieved successfully' },
+                    403: { description: 'Forbidden: Admin only' }
+                }
+            }
         }
     },
 };

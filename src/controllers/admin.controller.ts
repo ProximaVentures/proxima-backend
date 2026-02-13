@@ -129,6 +129,7 @@ export const updateProjectStatus = asyncHandler(async (req: Request, res: Respon
     });
 });
 
+
 /**
  * Assign Professional to Project
  */
@@ -166,5 +167,73 @@ export const assignProfessional = asyncHandler(async (req: Request, res: Respons
         success: true,
         message: 'Professional assigned successfully',
         data: assignment
+    });
+});
+
+/**
+ * Get All Users (Admin)
+ * Fetch all users with role filtering and pagination.
+ */
+export const getAllUsers = asyncHandler(async (req: Request, res: Response) => {
+    const role = typeof req.query.role === 'string' ? req.query.role : undefined;
+    const page = typeof req.query.page === 'string' ? parseInt(req.query.page) : 1;
+    const limit = typeof req.query.limit === 'string' ? parseInt(req.query.limit) : 10;
+
+    const skip = (page - 1) * limit;
+
+    const where: any = {};
+    if (role) {
+        where.role = role;
+    }
+
+    const users = await prisma.user.findMany({
+        where,
+        include: {
+            profile: true,
+            _count: {
+                select: {
+                    projects: true,
+                    pitches: true,
+                    assignments: true
+                }
+            }
+        },
+        skip,
+        take: Number(limit),
+        orderBy: { createdAt: 'desc' }
+    });
+
+    const total = await prisma.user.count({ where });
+
+    res.status(200).json({
+        success: true,
+        count: users.length,
+        total,
+        totalPages: Math.ceil(total / Number(limit)),
+        currentPage: Number(page),
+        data: users
+    });
+});
+
+/**
+ * Get User Stats (Admin)
+ */
+export const getUserStats = asyncHandler(async (req: Request, res: Response) => {
+    const [clientCount, professionalCount, projectCount, pitchCount] = await Promise.all([
+        prisma.user.count({ where: { role: 'CLIENT' } }),
+        prisma.user.count({ where: { role: 'PROFESSIONAL' } }),
+        prisma.project.count(),
+        prisma.investmentPitch.count(),
+    ]);
+
+    res.status(200).json({
+        success: true,
+        data: {
+            clients: clientCount,
+            professionals: professionalCount,
+            projects: projectCount,
+            pitches: pitchCount,
+            totalUsers: clientCount + professionalCount
+        }
     });
 });
