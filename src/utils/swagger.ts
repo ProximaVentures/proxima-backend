@@ -326,7 +326,7 @@ const swaggerDocument = {
                 tags: ['Admin'],
                 security: [{ bearerAuth: [] }],
                 parameters: [
-                    { in: 'query', name: 'status', schema: { type: 'string', enum: ['PENDING', 'REVIEWING', 'ACTIVE', 'COMPLETED', 'CANCELLED', 'REJECTED'] } },
+                    { in: 'query', name: 'status', schema: { type: 'string', enum: ['PENDING', 'REVIEWING', 'ACCEPTED', 'ACTIVE', 'COMPLETED', 'CANCELLED', 'REJECTED'] } },
                     { in: 'query', name: 'page', schema: { type: 'integer', default: 1 } },
                     { in: 'query', name: 'limit', schema: { type: 'integer', default: 10 } }
                 ],
@@ -351,7 +351,7 @@ const swaggerDocument = {
                             schema: {
                                 type: 'object',
                                 properties: {
-                                    status: { type: 'string', enum: ['PENDING', 'REVIEWING', 'ACTIVE', 'COMPLETED', 'CANCELLED', 'REJECTED'] }
+                                    status: { type: 'string', enum: ['PENDING', 'REVIEWING', 'ACCEPTED', 'ACTIVE', 'COMPLETED', 'CANCELLED', 'REJECTED'] }
                                 },
                                 required: ['status']
                             }
@@ -419,6 +419,50 @@ const swaggerDocument = {
                 responses: {
                     200: { description: 'Statistics retrieved successfully' },
                     403: { description: 'Forbidden: Admin only' }
+                }
+            }
+        },
+        '/api/admin/professionals/pending': {
+            get: {
+                summary: 'Get Pending Professionals for Vetting (Admin)',
+                tags: ['Admin'],
+                security: [{ bearerAuth: [] }],
+                parameters: [
+                    { in: 'query', name: 'page', schema: { type: 'integer', default: 1 } },
+                    { in: 'query', name: 'limit', schema: { type: 'integer', default: 10 } }
+                ],
+                responses: {
+                    200: { description: 'Professionals retrieved successfully' },
+                    403: { description: 'Forbidden: Admin only' }
+                }
+            }
+        },
+        '/api/admin/professionals/{id}/vet': {
+            patch: {
+                summary: 'Vet/Unvet Professional (Admin)',
+                tags: ['Admin'],
+                security: [{ bearerAuth: [] }],
+                parameters: [
+                    { in: 'path', name: 'id', required: true, schema: { type: 'string' } }
+                ],
+                requestBody: {
+                    required: true,
+                    content: {
+                        'application/json': {
+                            schema: {
+                                type: 'object',
+                                properties: {
+                                    isVetted: { type: 'boolean' }
+                                },
+                                required: ['isVetted']
+                            }
+                        }
+                    }
+                },
+                responses: {
+                    200: { description: 'Professional status updated' },
+                    403: { description: 'Forbidden: Admin only' },
+                    404: { description: 'Professional not found' }
                 }
             }
         }
