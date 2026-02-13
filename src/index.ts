@@ -41,6 +41,7 @@ const allowedOrigins = [
     'https://proventures.vercel.app',
     'https://proven-app.vercel.app',
     'https://proven-backend.onrender.com',
+    'https://proxima-backend-drl6.onrender.com',
     ...(process.env.ALLOWED_ORIGINS?.split(',') || [])
 ].map(origin => origin.trim());
 
