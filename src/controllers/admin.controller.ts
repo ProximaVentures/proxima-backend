@@ -82,12 +82,7 @@ export const getAllProjects = asyncHandler(async (req: Request, res: Response) =
     const projects = await prisma.project.findMany({
         where,
         include: {
-            client: { select: { id: true, email: true, username: true } },
-            assignments: {
-                include: {
-                    user: { select: { id: true, email: true, username: true, profile: { select: { firstName: true, lastName: true } } } }
-                }
-            }
+            client: { select: { id: true, email: true, username: true } }
         },
         skip,
         take: Number(limit),
@@ -193,8 +188,7 @@ export const getAllUsers = asyncHandler(async (req: Request, res: Response) => {
             _count: {
                 select: {
                     projects: true,
-                    pitches: true,
-                    assignments: true
+                    pitches: true
                 }
             }
         },
