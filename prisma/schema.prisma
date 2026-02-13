@@ -41,6 +41,7 @@ enum VettingStatus {
 enum ProjectStatus {
   PENDING
   REVIEWING
+  ACCEPTED
   ACTIVE
   COMPLETED
   CANCELLED
