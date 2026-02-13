@@ -23,7 +23,9 @@ export const errorHandler = (err: any, req: Request, res: Response, next: NextFu
         }
     }
 
-    console.error(`[🚨 ERROR]: ${err.message}`, {
+    const errorId = Math.random().toString(36).substring(7).toUpperCase();
+
+    console.error(`[🚨 ERROR ${errorId}]: ${err.message}`, {
         stack: err.stack,
         path: req.path,
         method: req.method
@@ -31,9 +33,12 @@ export const errorHandler = (err: any, req: Request, res: Response, next: NextFu
 
     res.status(statusCode).json({
         success: false,
-        message,
+        message: process.env.NODE_ENV === 'production' && statusCode >= 500
+            ? `${message} (Ref: ${errorId})`
+            : message,
         // Only show stack in development
         stack: process.env.NODE_ENV === 'development' ? err.stack : undefined,
+        errorId: process.env.NODE_ENV === 'development' ? errorId : undefined,
     });
 };
 

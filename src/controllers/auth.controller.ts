@@ -99,48 +99,57 @@ export const verifyOTP = asyncHandler(async (req: Request, res: Response) => {
 export const login = asyncHandler(async (req: Request<{}, {}, LoginInput>, res: Response) => {
     const { email, password } = req.body;
 
-    const user = await prisma.user.findUnique({
-        where: { email },
-        include: { profile: true },
-    });
+    try {
+        const user = await prisma.user.findUnique({
+            where: { email },
+            include: { profile: true },
+        });
 
-    if (!user) {
-        throw new AppError('Invalid email or password', 401);
-    }
+        if (!user) {
+            console.warn(`[🚨 LOGIN ATTEMPT FAILED]: User not found - ${email}`);
+            throw new AppError('Invalid email or password', 401);
+        }
 
-    if (!user.password) {
-        throw new AppError('Invalid email or password', 401);
-    }
+        if (!user.password) {
+            console.warn(`[🚨 LOGIN ATTEMPT FAILED]: Password missing for user - ${email}`);
+            throw new AppError('Invalid email or password', 401);
+        }
 
-    const isPasswordValid = await bcrypt.compare(password, user.password);
-    if (!isPasswordValid) {
-        throw new AppError('Invalid email or password', 401);
-    }
+        const isPasswordValid = await bcrypt.compare(password, user.password);
+        if (!isPasswordValid) {
+            console.warn(`[🚨 LOGIN ATTEMPT FAILED]: Incorrect password for - ${email}`);
+            throw new AppError('Invalid email or password', 401);
+        }
 
-    if (!user.isVerified) {
-        throw new AppError('Please verify your email before logging in', 403);
-    }
+        if (!user.isVerified) {
+            console.warn(`[🚨 LOGIN ATTEMPT FAILED]: Email not verified - ${email}`);
+            throw new AppError('Please verify your email before logging in', 403);
+        }
 
-    // Generate JWT
-    const authToken = jwt.sign(
-        { userId: user.id, role: user.role },
-        process.env.JWT_SECRET || 'secret',
-        { expiresIn: '1d' }
-    );
+        // Generate JWT
+        const authToken = jwt.sign(
+            { userId: user.id, role: user.role },
+            process.env.JWT_SECRET || 'secret',
+            { expiresIn: '1d' }
+        );
 
-    res.status(200).json({
-        success: true,
-        message: 'Login successful',
-        token: authToken,
-        data: {
-            user: {
-                id: user.id,
-                email: user.email,
-                role: user.role,
-                onboardingComplete: user.profile?.onboardingComplete,
+        res.status(200).json({
+            success: true,
+            message: 'Login successful',
+            token: authToken,
+            data: {
+                user: {
+                    id: user.id,
+                    email: user.email,
+                    role: user.role,
+                    onboardingComplete: user.profile?.onboardingComplete || false,
+                },
             },
-        },
-    });
+        });
+    } catch (error: any) {
+        console.error(`[🚨 LOGIN CRASH/ERROR]: ${email}`, error);
+        throw error;
+    }
 });
 
 /**

@@ -5,7 +5,7 @@ import morgan from 'morgan';
 import 'dotenv/config';
 
 // Centralize module exports for cleaner entry point imports.
-import { errorHandler } from './middleware/error.middleware.js';
+import { errorHandler, AppError } from './middleware/error.middleware.js';
 import authRoutes from './routes/auth.routes.js';
 import profileRoutes from './routes/profile.routes.js';
 import adminRoutes from './routes/admin.routes.js';
@@ -14,6 +14,8 @@ import { setupSwagger } from './utils/swagger.js';
 
 const app = express();
 const PORT = process.env.PORT || 5000;
+
+app.set('trust proxy', 1); // Trust first proxy (Render/Vercel)
 
 // 🛡️ Rate Limiting - Prevent brute-force attacks
 import { rateLimit } from 'express-rate-limit';
@@ -35,30 +37,36 @@ app.use('/api/auth', authLimiter);
 const allowedOrigins = [
     'http://localhost:3000',
     'http://localhost:3001',
+    'http://localhost:5000',
     'https://proventures.vercel.app',
     'https://proven-app.vercel.app',
+    'https://proven-backend.onrender.com',
     ...(process.env.ALLOWED_ORIGINS?.split(',') || [])
 ].map(origin => origin.trim());
 
 app.use(cors({
     origin: (origin, callback) => {
-        // Allow requests with no origin (like mobile apps or curl)
+        // 1. Allow mobile apps, curl, and same-origin server-side requests
         if (!origin) return callback(null, true);
 
-        const isAllowed = allowedOrigins.some(allowedOrigin => {
-            return allowedOrigin === origin || origin.endsWith('.vercel.app');
+        // 2. Check restrictive whitelist
+        const isWhitelisted = allowedOrigins.some(allowedOrigin => {
+            return allowedOrigin === origin || (origin.endsWith('.vercel.app') && !origin.includes('localhost'));
         });
 
-        if (isAllowed || process.env.NODE_ENV === 'development') {
+        // 3. Environment-based relaxation
+        const isDev = process.env.NODE_ENV === 'development' || !process.env.NODE_ENV;
+
+        if (isWhitelisted || isDev) {
             callback(null, true);
         } else {
-            console.error(`[🚨 CORS BLOCK]: Request from origin ${origin} was rejected. Allowed: ${allowedOrigins.join(', ')}`);
-            callback(new Error('Not allowed by CORS'));
+            console.error(`[🚨 CORS BLOCK]: Origin ${origin} rejected. Whitelist: ${allowedOrigins.join(', ')}`);
+            callback(new AppError('Not allowed by CORS', 403));
         }
     },
     credentials: true,
     methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
-    allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With', 'Accept'],
+    allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With', 'Accept', 'Origin'],
     exposedHeaders: ['Set-Cookie']
 }));
 
