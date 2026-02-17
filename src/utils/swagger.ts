@@ -320,6 +320,21 @@ const swaggerDocument = {
                 }
             }
         },
+        '/api/projects/feed': {
+            get: {
+                summary: 'Get Accepted Projects Feed (Professionals)',
+                tags: ['Projects'],
+                security: [{ bearerAuth: [] }],
+                parameters: [
+                    { in: 'query', name: 'page', schema: { type: 'integer', default: 1 } },
+                    { in: 'query', name: 'limit', schema: { type: 'integer', default: 10 } }
+                ],
+                responses: {
+                    200: { description: 'Feed projects retrieved successfully' },
+                    401: { description: 'Unauthorized' }
+                }
+            }
+        },
         '/api/admin/projects': {
             get: {
                 summary: 'Get All Projects (Admin)',
@@ -452,9 +467,10 @@ const swaggerDocument = {
                             schema: {
                                 type: 'object',
                                 properties: {
-                                    isVetted: { type: 'boolean' }
+                                    status: { type: 'string', enum: ['VETTED', 'REJECTED'] },
+                                    remarks: { type: 'string' }
                                 },
-                                required: ['isVetted']
+                                required: ['status']
                             }
                         }
                     }

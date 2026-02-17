@@ -220,3 +220,48 @@ export const updateInvestmentPitch = asyncHandler(async (req: AuthRequest, res: 
         data: pitch,
     });
 });
+
+/**
+ * Get Accepted Projects (For Professionals Feed)
+ */
+export const getAcceptedProjects = asyncHandler(async (req: AuthRequest, res: Response) => {
+    // Optional: Add pagination
+    const page = parseInt(req.query.page as string) || 1;
+    const limit = parseInt(req.query.limit as string) || 10;
+    const skip = (page - 1) * limit;
+
+    const projects = await prisma.project.findMany({
+        where: {
+            status: 'ACCEPTED',
+        },
+        include: {
+            client: {
+                select: {
+                    id: true,
+                    username: true,
+                    // Add other client fields if necessary
+                }
+            }
+        },
+        orderBy: {
+            createdAt: 'desc',
+        },
+        skip,
+        take: limit,
+    });
+
+    const total = await prisma.project.count({
+        where: {
+            status: 'ACCEPTED',
+        },
+    });
+
+    res.status(200).json({
+        success: true,
+        count: projects.length,
+        total,
+        page,
+        totalPages: Math.ceil(total / limit),
+        data: projects,
+    });
+});

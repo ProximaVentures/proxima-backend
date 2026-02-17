@@ -38,4 +38,10 @@ router.get(
     projectController.getMySubmissions
 );
 
+// Public/Protected feed for professionals
+router.get(
+    '/feed',
+    projectController.getAcceptedProjects
+);
+
 export default router;
