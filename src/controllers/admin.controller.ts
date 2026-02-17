@@ -117,6 +117,11 @@ export const updateProjectStatus = asyncHandler(async (req: Request, res: Respon
     // Actually, I should check the Prisma schema for ProjectStatus enum if possible, but I'll assume the string passed is correct for now or matches the frontend options.
 
     // Update project and fetch client email
+    console.log(`[Admin] Updating project ${id} to status: ${status}`);
+
+    // Normalize status to match Enum if needed (Prisma is strict, so we expect correct case from frontend)
+    // If status is "APPROVED" (legacy/typo), map it to "ACCEPTED" or "ACTIVE" if necessary, though we fixed frontend.
+
     const project = await prisma.project.update({
         where: { id },
         data: { status },
@@ -135,11 +140,15 @@ export const updateProjectStatus = asyncHandler(async (req: Request, res: Respon
         }
     });
 
+    console.log(`[Admin] Project updated. Client email: ${project.client?.email}`);
+
     // Send Email Notification
     if (project.client && project.client.email) {
         const clientName = project.client.profile?.firstName || project.client.username || 'Client';
         let subject = `Project Status Update: ${project.title}`;
         let message = '';
+
+        console.log(`[Admin] Preparing email for status: ${status}`);
 
         switch (status) {
             case 'ACCEPTED':
