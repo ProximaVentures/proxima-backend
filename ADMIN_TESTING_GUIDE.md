@@ -13,8 +13,8 @@ You **must** be logged in as an ADMIN.
 
 ### A. Fetch All Users
 - **Endpoint**: `GET /api/admin/users`
-- **Goal**: Verify you can see all users (Clients and Professionals).
-- **Try Filters**:
+- **Goal**: Verify you can see all users (Clients and Professionals). 
+- **Try Filters**: 
     - Add `role=PROFESSIONAL` to see only professionals.
     - Add `role=CLIENT` to see only clients.
 - **Verification**: Check if the `include.profile` field contains the expected data (bio, category, vetting status).

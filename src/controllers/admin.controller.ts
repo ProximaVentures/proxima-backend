@@ -159,7 +159,7 @@ export const updateProjectStatus = asyncHandler(async (req: Request, res: Respon
                     break;
                 case 'COMPLETED':
                     subject = `✅ Project Completed: ${project.title}`;
-                    message = `Your project "<strong>${project.title}</strong>" has been marked as completed. Thank you for choosing ProProven!`;
+                    message = `Your project "<strong>${project.title}</strong>" has been marked as completed. Thank you for choosing Proven!`;
                     break;
                 case 'CANCELLED':
                     subject = `Project Cancelled: ${project.title}`;
@@ -175,13 +175,13 @@ export const updateProjectStatus = asyncHandler(async (req: Request, res: Respon
 
             const html = `
                 <div style="font-family: 'Segoe UI', sans-serif; max-width: 600px; margin: auto; padding: 24px; border: 1px solid #e5e7eb; border-radius: 12px; background-color: #ffffff;">
-                    <h2 style="color: #4F46E5; margin-bottom: 16px;">ProProven Project Update</h2>
+                    <h2 style="color: #4F46E5; margin-bottom: 16px;">Proven Project Update</h2>
                     <p style="color: #374151;">Hi ${clientName},</p>
                     <p style="color: #374151; line-height: 1.6;">${message}</p>
                     <br/>
                     <a href="${process.env.FRONTEND_URL || 'http://localhost:3000'}/dashboard/client/projects/${project.id}" style="background-color: #4F46E5; color: white; padding: 12px 24px; text-decoration: none; border-radius: 8px; display: inline-block; font-weight: 600;">View Project</a>
                     <hr style="border: 0; border-top: 1px solid #e5e7eb; margin: 24px 0;" />
-                    <p style="font-size: 12px; color: #9ca3af;">Powered by ProProven</p>
+                    <p style="font-size: 12px; color: #9ca3af;">Powered by Proven</p>
                 </div>
             `;
 

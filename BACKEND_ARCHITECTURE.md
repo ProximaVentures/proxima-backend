@@ -1,6 +1,6 @@
 # ProVen Backend Architecture Guide
 
-This document breaks down the "ProProven" backend codebase, explaining the structure, the "why" behind each component, and how it all connects.
+This document breaks down the "Proven" backend codebase, explaining the structure, the "why" behind each component, and how it all connects.
 
 ---
 
