@@ -1,39 +1,42 @@
-import { Resend } from 'resend';
+import nodemailer from 'nodemailer';
 import 'dotenv/config';
 
-// Initialize Resend Client
-const resend = new Resend(process.env.RESEND_API_KEY);
+// Initialize Nodemailer Transporter
+const transporter = nodemailer.createTransport({
+  host: process.env.EMAIL_HOST || 'smtp.resend.com',
+  port: parseInt(process.env.EMAIL_PORT || '465'),
+  secure: true, // true for 465, false for other ports
+  auth: {
+    user: process.env.EMAIL_USER,
+    pass: process.env.EMAIL_PASS,
+  },
+});
 
 /**
- * Generic Email Sender via Resend API
+ * Generic Email Sender via Nodemailer
  */
 export const sendEmail = async (to: string, subject: string, html: string) => {
-  const from = process.env.EMAIL_FROM || 'onboarding@resend.dev';
+  const from = process.env.EMAIL_FROM || '"ProProven" <onboarding@resend.dev>';
 
-  console.log(`[🚀 ATTEMPTING EMAIL VIA RESEND]: To: ${to}, Subject: ${subject}`);
+  console.log(`[🚀 ATTEMPTING EMAIL VIA NODEMAILER]: To: ${to}, Subject: ${subject}`);
 
-  if (!process.env.RESEND_API_KEY) {
-    console.error('[🚨 RESEND FAILED]: RESEND_API_KEY is missing in .env');
+  if (!process.env.EMAIL_USER || !process.env.EMAIL_PASS) {
+    console.error('[🚨 NODEMAILER FAILED]: EMAIL_USER or EMAIL_PASS is missing in .env');
     return false;
   }
 
   try {
-    const { data, error } = await resend.emails.send({
-      from: `ProProven <${from}>`,
+    const info = await transporter.sendMail({
+      from,
       to,
       subject,
       html,
     });
 
-    if (error) {
-      console.error(`[🚨 RESEND API ERROR]: recipient: ${to}`, error);
-      return false;
-    }
-
-    console.log(`[✅ EMAIL SENT]: ID: ${data?.id}`);
+    console.log(`[✅ EMAIL SENT]: Message ID: ${info.messageId}`);
     return true;
   } catch (error: any) {
-    console.error(`[🚨 RESEND UNEXPECTED ERROR]: recipient: ${to}`, error);
+    console.error(`[🚨 NODEMAILER UNEXPECTED ERROR]: recipient: ${to}`, error);
     return false;
   }
 };
@@ -54,7 +57,7 @@ export const sendOTPEmail = async (to: string, otp: string) => {
         <p style="margin-top: 20px;">This code will expire in 10 minutes. If you did not request this, please ignore this email.</p>
         <hr style="border: 0; border-top: 1px solid #eee; margin: 20px 0;" />
         <p style="font-size: 12px; color: #666; text-align: center;">
-          Powered by Proxima Ventures
+          Powered by ProProven
         </p>
       </div>
     `;
