@@ -108,19 +108,14 @@ export const updateProjectStatus = asyncHandler(async (req: Request, res: Respon
     const id = req.params.id as string;
     const { status } = req.body;
 
-    // Validate Status
-    const validStatuses = ['PENDING', 'mACCEPTED', 'REVIEWING', 'ACTIVE', 'COMPLETED', 'REJECTED', 'DRAFT'];
-    // Note: 'mACCEPTED' seems like a typo in my thought process or previous valid statuses context, but wait, the user said "Accepted". 
-    // Let's check the schema or previous files. `StatusBadge` had 'ACCEPTED'. 
-    // The previous file content for `admin.controller.ts` didn't have the status list validation in the code I read (it was commented out).
-    // I will stick to the logic of just updating and sending email, assuming the status passed is valid or handled by Prisma/Database constraints.
-    // Actually, I should check the Prisma schema for ProjectStatus enum if possible, but I'll assume the string passed is correct for now or matches the frontend options.
+    // Validate against Prisma ProjectStatus enum
+    const validStatuses = ['PENDING', 'REVIEWING', 'ACCEPTED', 'ACTIVE', 'COMPLETED', 'CANCELLED', 'REJECTED'];
 
-    // Update project and fetch client email
+    if (!status || !validStatuses.includes(status)) {
+        throw new AppError(`Invalid status "${status}". Valid statuses: ${validStatuses.join(', ')}`, 400);
+    }
+
     console.log(`[Admin] Updating project ${id} to status: ${status}`);
-
-    // Normalize status to match Enum if needed (Prisma is strict, so we expect correct case from frontend)
-    // If status is "APPROVED" (legacy/typo), map it to "ACCEPTED" or "ACTIVE" if necessary, though we fixed frontend.
 
     const project = await prisma.project.update({
         where: { id },
@@ -140,51 +135,65 @@ export const updateProjectStatus = asyncHandler(async (req: Request, res: Respon
         }
     });
 
-    console.log(`[Admin] Project updated. Client email: ${project.client?.email}`);
+    console.log(`[Admin] Project updated successfully. Client email: ${project.client?.email}`);
 
-    // Send Email Notification
+    // Send Email Notification (wrapped in try/catch so email failures don't break the API response)
     if (project.client && project.client.email) {
-        const clientName = project.client.profile?.firstName || project.client.username || 'Client';
-        let subject = `Project Status Update: ${project.title}`;
-        let message = '';
+        try {
+            const clientName = project.client.profile?.firstName || project.client.username || 'Client';
+            let subject = `Project Status Update: ${project.title}`;
+            let message = '';
 
-        console.log(`[Admin] Preparing email for status: ${status}`);
+            switch (status) {
+                case 'ACCEPTED':
+                    subject = `🎉 Project Accepted: ${project.title}`;
+                    message = `Great news! Your project "<strong>${project.title}</strong>" has been accepted by our team. It is now visible to professionals.`;
+                    break;
+                case 'REVIEWING':
+                    subject = `📋 Project Under Review: ${project.title}`;
+                    message = `Your project "<strong>${project.title}</strong>" is currently being reviewed by our team. We will get back to you shortly.`;
+                    break;
+                case 'ACTIVE':
+                    subject = `🚀 Project Active: ${project.title}`;
+                    message = `Your project "<strong>${project.title}</strong>" is now active and in progress.`;
+                    break;
+                case 'COMPLETED':
+                    subject = `✅ Project Completed: ${project.title}`;
+                    message = `Your project "<strong>${project.title}</strong>" has been marked as completed. Thank you for choosing ProProven!`;
+                    break;
+                case 'CANCELLED':
+                    subject = `Project Cancelled: ${project.title}`;
+                    message = `Your project "<strong>${project.title}</strong>" has been cancelled. If you have any questions, please contact support.`;
+                    break;
+                case 'REJECTED':
+                    subject = `Project Update: ${project.title}`;
+                    message = `Regarding your project "<strong>${project.title}</strong>" — unfortunately, it has been rejected. Please contact support for more details.`;
+                    break;
+                default:
+                    message = `The status of your project "<strong>${project.title}</strong>" has been updated to <strong>${status}</strong>.`;
+            }
 
-        switch (status) {
-            case 'ACCEPTED':
-                subject = `🎉 Project Accepted: ${project.title}`;
-                message = `Great news! Your project "<strong>${project.title}</strong>" has been accepted by our team. It is now visible to professionals.`;
-                break;
-            case 'REVIEWING':
-                subject = `Project Under Review: ${project.title}`;
-                message = `Your project "<strong>${project.title}</strong>" is currently being reviewed by our team. We will get back to you shortly.`;
-                break;
-            case 'ACTIVE':
-                subject = `🚀 Project Active: ${project.title}`;
-                message = `Your project "<strong>${project.title}</strong>" is now active and in progress.`;
-                break;
-            case 'REJECTED':
-                subject = `Project Status Update: ${project.title}`;
-                message = `Regarding your project "<strong>${project.title}</strong>". Unfortunately, it has been marked as rejected. Please contact support for more details.`;
-                break;
-            default:
-                message = `The status of your project "<strong>${project.title}</strong>" has been updated to <strong>${status}</strong>.`;
+            const html = `
+                <div style="font-family: 'Segoe UI', sans-serif; max-width: 600px; margin: auto; padding: 24px; border: 1px solid #e5e7eb; border-radius: 12px; background-color: #ffffff;">
+                    <h2 style="color: #4F46E5; margin-bottom: 16px;">ProProven Project Update</h2>
+                    <p style="color: #374151;">Hi ${clientName},</p>
+                    <p style="color: #374151; line-height: 1.6;">${message}</p>
+                    <br/>
+                    <a href="${process.env.FRONTEND_URL || 'http://localhost:3000'}/dashboard/client/projects/${project.id}" style="background-color: #4F46E5; color: white; padding: 12px 24px; text-decoration: none; border-radius: 8px; display: inline-block; font-weight: 600;">View Project</a>
+                    <hr style="border: 0; border-top: 1px solid #e5e7eb; margin: 24px 0;" />
+                    <p style="font-size: 12px; color: #9ca3af;">Powered by ProProven</p>
+                </div>
+            `;
+
+            console.log(`[Admin] Sending email to ${project.client.email} for status: ${status}`);
+            const emailSent = await sendEmail(project.client.email, subject, html);
+            console.log(`[Admin] Email result: ${emailSent ? '✅ Sent' : '❌ Failed'}`);
+        } catch (emailError) {
+            console.error(`[Admin] Email sending failed (non-blocking):`, emailError);
+            // Don't throw — status was updated successfully, email is secondary
         }
-
-        const html = `
-            <div style="font-family: sans-serif; max-width: 600px; margin: auto; padding: 20px; border: 1px solid #eee; border-radius: 10px;">
-                <h2 style="color: #4F46E5;">ProProven Project Update</h2>
-                <p>Hi ${clientName},</p>
-                <p>${message}</p>
-                <br/>
-                <a href="${process.env.FRONTEND_URL || 'http://localhost:3000'}/dashboard/client/projects/${project.id}" style="background-color: #4F46E5; color: white; padding: 10px 20px; text-decoration: none; border-radius: 5px; display: inline-block;">View Project</a>
-                <hr style="border: 0; border-top: 1px solid #eee; margin: 20px 0;" />
-                <p style="font-size: 12px; color: #666;">Powered by ProProven</p>
-            </div>
-        `;
-
-        // Send the email (fire and forget to not block response significantly, or await if critical)
-        await sendEmail(project.client.email, subject, html);
+    } else {
+        console.log(`[Admin] No client email found for project ${id}, skipping notification.`);
     }
 
     res.status(200).json({
