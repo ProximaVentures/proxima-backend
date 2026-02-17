@@ -1,42 +1,39 @@
-import nodemailer from 'nodemailer';
+import { Resend } from 'resend';
 import 'dotenv/config';
 
-// Initialize Nodemailer Transporter
-const transporter = nodemailer.createTransport({
-  host: process.env.EMAIL_HOST || 'smtp.resend.com',
-  port: parseInt(process.env.EMAIL_PORT || '465'),
-  secure: true, // true for 465, false for other ports
-  auth: {
-    user: process.env.EMAIL_USER,
-    pass: process.env.EMAIL_PASS,
-  },
-});
+// Initialize Resend Client
+const resend = new Resend(process.env.RESEND_API_KEY);
 
 /**
- * Generic Email Sender via Nodemailer
+ * Generic Email Sender via Resend API
  */
 export const sendEmail = async (to: string, subject: string, html: string) => {
-  const from = process.env.EMAIL_FROM || '"ProProven" <onboarding@resend.dev>';
+  const from = process.env.EMAIL_FROM || 'onboarding@resend.dev';
 
-  console.log(`[🚀 ATTEMPTING EMAIL VIA NODEMAILER]: To: ${to}, Subject: ${subject}`);
+  console.log(`[🚀 ATTEMPTING EMAIL VIA RESEND]: To: ${to}, Subject: ${subject}`);
 
-  if (!process.env.EMAIL_USER || !process.env.EMAIL_PASS) {
-    console.error('[🚨 NODEMAILER FAILED]: EMAIL_USER or EMAIL_PASS is missing in .env');
+  if (!process.env.RESEND_API_KEY) {
+    console.error('[🚨 RESEND FAILED]: RESEND_API_KEY is missing in .env');
     return false;
   }
 
   try {
-    const info = await transporter.sendMail({
-      from,
+    const { data, error } = await resend.emails.send({
+      from: `ProProven <${from}>`,
       to,
       subject,
       html,
     });
 
-    console.log(`[✅ EMAIL SENT]: Message ID: ${info.messageId}`);
+    if (error) {
+      console.error(`[🚨 RESEND API ERROR]: recipient: ${to}`, error);
+      return false;
+    }
+
+    console.log(`[✅ EMAIL SENT]: ID: ${data?.id}`);
     return true;
   } catch (error: any) {
-    console.error(`[🚨 NODEMAILER UNEXPECTED ERROR]: recipient: ${to}`, error);
+    console.error(`[🚨 RESEND UNEXPECTED ERROR]: recipient: ${to}`, error);
     return false;
   }
 };
