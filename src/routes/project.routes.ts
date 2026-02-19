@@ -44,4 +44,16 @@ router.get(
     projectController.getAcceptedProjects
 );
 
+// Get specific project details
+router.get(
+    '/:id',
+    projectController.getProjectById
+);
+
+// Express interest in a project
+router.post(
+    '/:id/interest',
+    projectController.expressInterest
+);
+
 export default router;

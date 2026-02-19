@@ -26,13 +26,14 @@ export const protect = async (req: AuthRequest, res: Response, next: NextFunctio
         token = req.headers.authorization.split(' ')[1];
     }
 
+    const secret = process.env.JWT_SECRET;
+
     if (!token) {
         return next(new AppError('Not authorized to access this route', 401));
     }
 
     try {
         // 1. Verify Token
-        const secret = process.env.JWT_SECRET;
         if (!secret) {
             console.error('[🚨 SECURITY CRITICAL]: JWT_SECRET is not defined in environment variables');
             if (process.env.NODE_ENV === 'production') {

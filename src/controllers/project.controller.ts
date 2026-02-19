@@ -265,3 +265,99 @@ export const getAcceptedProjects = asyncHandler(async (req: AuthRequest, res: Re
         data: projects,
     });
 });
+/**
+ * Get Specific Project by ID
+ */
+export const getProjectById = asyncHandler(async (req: AuthRequest, res: Response) => {
+    const userId = req.user?.id;
+    const projectId = req.params.id as string;
+
+    if (!userId) throw new AppError('Unauthorized', 401);
+
+    const project = await prisma.project.findUnique({
+        where: { id: projectId },
+        include: {
+            client: {
+                select: {
+                    id: true,
+                    username: true,
+                    email: true,
+                }
+            }
+        }
+    });
+
+    if (!project) {
+        throw new AppError('Project not found', 404);
+    }
+
+    // Authorization: Client owner, Admin, or Professional (if project is ACCEPTED)
+    const isOwner = project.clientId === userId;
+    const isAdmin = req.user?.role === 'ADMIN';
+    const isProfessional = req.user?.role === 'PROFESSIONAL';
+    const isPublicAccepted = project.status === 'ACCEPTED';
+
+    if (!isOwner && !isAdmin && (!isProfessional || !isPublicAccepted)) {
+        throw new AppError('You are not authorized to view this project', 403);
+    }
+
+    res.status(200).json({
+        success: true,
+        data: project,
+    });
+});
+
+/**
+ * Express Interest in a Project (Professionals)
+ */
+export const expressInterest = asyncHandler(async (req: AuthRequest, res: Response) => {
+    const userId = req.user?.id;
+    const projectId = req.params.id as string;
+    const { role, note } = req.body;
+
+    if (!userId) throw new AppError('Unauthorized', 401);
+    if (req.user?.role !== 'PROFESSIONAL') {
+        throw new AppError('Only professionals can express interest in projects', 403);
+    }
+
+    const project = await prisma.project.findUnique({
+        where: { id: projectId },
+    });
+
+    if (!project) {
+        throw new AppError('Project not found', 404);
+    }
+
+    if (project.status !== 'ACCEPTED') {
+        throw new AppError('This project is not open for interest expressing', 400);
+    }
+
+    // Check if interest already expressed
+    const existingAssignment = await prisma.projectAssignment.findUnique({
+        where: {
+            projectId_userId: {
+                projectId,
+                userId,
+            }
+        }
+    });
+
+    if (existingAssignment) {
+        throw new AppError('You have already expressed interest in this project', 400);
+    }
+
+    const assignment = await prisma.projectAssignment.create({
+        data: {
+            projectId,
+            userId,
+            role,
+            status: 'INTERESTED', // We'll use this string to differentiate
+        }
+    });
+
+    res.status(201).json({
+        success: true,
+        message: 'Interest recorded successfully!',
+        data: assignment,
+    });
+});
