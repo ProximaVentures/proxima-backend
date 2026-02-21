@@ -4,26 +4,26 @@ import { sendEmail } from '../utils/email.js';
 import { z } from 'zod';
 
 const contactSchema = z.object({
-    name: z.string().min(2, 'Name must be at least 2 characters'),
-    email: z.string().email('Invalid email address'),
-    subject: z.string().min(5, 'Subject must be at least 5 characters'),
-    message: z.string().min(10, 'Message must be at least 10 characters'),
+  name: z.string().min(2, 'Name must be at least 2 characters'),
+  email: z.string().email('Invalid email address'),
+  subject: z.string().min(5, 'Subject must be at least 5 characters'),
+  message: z.string().min(10, 'Message must be at least 10 characters'),
 });
 
 /**
  * Handle Contact Form Submission
  */
 export const handleContactForm = asyncHandler(async (req: Request, res: Response) => {
-    const result = contactSchema.safeParse(req.body);
+  const result = contactSchema.safeParse(req.body);
 
-    if (!result.success) {
-        throw new AppError(result.error.errors[0].message, 400);
-    }
+  if (!result.success) {
+    throw new AppError(result.error.issues[0]?.message || 'Validation failed', 400);
+  }
 
-    const { name, email, subject, message } = result.data;
-    const adminEmail = 'fonyuyjudegita@gmail.com';
+  const { name, email, subject, message } = result.data;
+  const adminEmail = 'fonyuyjudegita@gmail.com';
 
-    const html = `
+  const html = `
     <div style="font-family: 'Inter', sans-serif; max-width: 600px; margin: auto; padding: 40px; border: 1px solid #e2e8f0; border-radius: 24px; background-color: #ffffff;">
       <div style="margin-bottom: 32px; border-bottom: 2px solid #f1f5f9; padding-bottom: 20px;">
         <h2 style="color: #0f172a; margin: 0; font-size: 24px; font-weight: 800; letter-spacing: -0.025em;">New Contact Inquiry</h2>
@@ -54,16 +54,16 @@ export const handleContactForm = asyncHandler(async (req: Request, res: Response
     </div>
   `;
 
-    console.log(`[🚀 CONTACT FORM]: Attempting to notify admin: ${adminEmail}`);
+  console.log(`[🚀 CONTACT FORM]: Attempting to notify admin: ${adminEmail}`);
 
-    const success = await sendEmail(adminEmail, `[ProVen Inquiry]: ${subject}`, html);
+  const success = await sendEmail(adminEmail, `[ProVen Inquiry]: ${subject}`, html);
 
-    if (!success) {
-        throw new AppError('Failed to send inquiry. Please try again later or contact us directly.', 500);
-    }
+  if (!success) {
+    throw new AppError('Failed to send inquiry. Please try again later or contact us directly.', 500);
+  }
 
-    res.status(200).json({
-        success: true,
-        message: "Thank you! We've received your message and will be in touch shortly.",
-    });
+  res.status(200).json({
+    success: true,
+    message: "Thank you! We've received your message and will be in touch shortly.",
+  });
 });
