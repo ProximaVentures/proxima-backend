@@ -10,6 +10,7 @@ import authRoutes from './routes/auth.routes.js';
 import profileRoutes from './routes/profile.routes.js';
 import adminRoutes from './routes/admin.routes.js';
 import projectRoutes from './routes/project.routes.js';
+import contactRoutes from './routes/contact.routes.js';
 import { setupSwagger } from './utils/swagger.js';
 
 const app = express();
@@ -111,6 +112,7 @@ app.use('/api/auth', authRoutes);
 app.use('/api/profile', profileRoutes);
 app.use('/api/admin', adminRoutes);
 app.use('/api/projects', projectRoutes);
+app.use('/api/contact', contactRoutes);
 
 // SWAGGER DOCS - Setup before listen so it's available immediately
 setupSwagger(app);
