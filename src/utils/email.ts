@@ -10,7 +10,7 @@ const resend = new Resend(process.env.RESEND_API_KEY);
 export const sendEmail = async (to: string, subject: string, html: string) => {
   const from = process.env.EMAIL_FROM || 'onboarding@resend.dev';
 
-  console.log(`[🚀 ATTEMPTING EMAIL VIA RESEND]: To: ${to}, Subject: ${subject}`);
+
 
   if (!process.env.RESEND_API_KEY) {
     console.error('[🚨 RESEND FAILED]: RESEND_API_KEY is missing in .env');
@@ -30,7 +30,7 @@ export const sendEmail = async (to: string, subject: string, html: string) => {
       return false;
     }
 
-    console.log(`[✅ EMAIL SENT]: ID: ${data?.id}`);
+
     return true;
   } catch (error: any) {
     console.error(`[🚨 RESEND UNEXPECTED ERROR]: recipient: ${to}`, error);

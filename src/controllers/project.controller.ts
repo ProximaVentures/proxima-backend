@@ -112,13 +112,6 @@ export const getMySubmissions = asyncHandler(async (req: AuthRequest, res: Respo
             pitches,
         },
     });
-    res.status(200).json({
-        success: true,
-        data: {
-            projects,
-            pitches,
-        },
-    });
 });
 
 /**
@@ -241,6 +234,17 @@ export const getAcceptedProjects = asyncHandler(async (req: AuthRequest, res: Re
                     username: true,
                     // Add other client fields if necessary
                 }
+            },
+            assignments: {
+                where: {
+                    userId: req.user?.id || '',
+                    status: 'INTERESTED',
+                },
+                select: {
+                    userId: true,
+                    status: true,
+                    role: true
+                }
             }
         },
         orderBy: {
@@ -282,7 +286,52 @@ export const getProjectById = asyncHandler(async (req: AuthRequest, res: Respons
                     id: true,
                     username: true,
                     email: true,
+                    profile: {
+                        select: {
+                            firstName: true,
+                            lastName: true,
+                            avatarUrl: true,
+                        }
+                    }
                 }
+            },
+            assignments: {
+                include: {
+                    user: {
+                        select: {
+                            id: true,
+                            username: true,
+                            email: true,
+                            profile: {
+                                select: {
+                                    firstName: true,
+                                    lastName: true,
+                                    avatarUrl: true,
+                                    category: true,
+                                }
+                            }
+                        }
+                    }
+                },
+                orderBy: { assignedAt: 'desc' }
+            },
+            resources: {
+                orderBy: { createdAt: 'desc' }
+            },
+            updates: {
+                orderBy: { createdAt: 'desc' }
+            },
+            meetings: {
+                orderBy: { startTime: 'asc' }
+            },
+            documents: {
+                orderBy: { createdAt: 'desc' }
+            },
+            projectInfo: {
+                orderBy: { createdAt: 'desc' }
+            },
+            tasks: {
+                orderBy: { createdAt: 'desc' }
             }
         }
     });
@@ -291,19 +340,23 @@ export const getProjectById = asyncHandler(async (req: AuthRequest, res: Respons
         throw new AppError('Project not found', 404);
     }
 
-    // Authorization: Client owner, Admin, or Professional (if project is ACCEPTED)
+    // Authorization: Client owner, Admin, or Professional (if project is ACCEPTED or they are assigned)
     const isOwner = project.clientId === userId;
     const isAdmin = req.user?.role === 'ADMIN';
     const isProfessional = req.user?.role === 'PROFESSIONAL';
+    const isAssigned = project.assignments.some(a => a.userId === userId);
     const isPublicAccepted = project.status === 'ACCEPTED';
 
-    if (!isOwner && !isAdmin && (!isProfessional || !isPublicAccepted)) {
+    if (!isOwner && !isAdmin && (!isProfessional || (!isPublicAccepted && !isAssigned))) {
         throw new AppError('You are not authorized to view this project', 403);
     }
 
     res.status(200).json({
         success: true,
-        data: project,
+        data: {
+            ...project,
+            isAssigned, // Tell the frontend if the current user is assigned
+        },
     });
 });
 
@@ -332,7 +385,7 @@ export const expressInterest = asyncHandler(async (req: AuthRequest, res: Respon
         throw new AppError('This project is not open for interest expressing', 400);
     }
 
-    // Check if interest already expressed
+    // Check if assignment already exists
     const existingAssignment = await prisma.projectAssignment.findUnique({
         where: {
             projectId_userId: {
@@ -343,7 +396,20 @@ export const expressInterest = asyncHandler(async (req: AuthRequest, res: Respon
     });
 
     if (existingAssignment) {
-        throw new AppError('You have already expressed interest in this project', 400);
+        // If already ACTIVE (assigned by admin), don't allow re-interest
+        if (existingAssignment.status === 'ACTIVE') {
+            return res.status(200).json({
+                success: true,
+                message: 'You are already assigned to this project.',
+                data: existingAssignment,
+            });
+        }
+        // If already INTERESTED, return idempotently
+        return res.status(200).json({
+            success: true,
+            message: 'Interest already recorded.',
+            data: existingAssignment,
+        });
     }
 
     const assignment = await prisma.projectAssignment.create({
@@ -351,7 +417,8 @@ export const expressInterest = asyncHandler(async (req: AuthRequest, res: Respon
             projectId,
             userId,
             role,
-            status: 'INTERESTED', // We'll use this string to differentiate
+            note: note || null,
+            status: 'INTERESTED',
         }
     });
 

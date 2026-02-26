@@ -54,7 +54,7 @@ export const handleContactForm = asyncHandler(async (req: Request, res: Response
     </div>
   `;
 
-  console.log(`[🚀 CONTACT FORM]: Attempting to notify admin: ${adminEmail}`);
+
 
   const success = await sendEmail(adminEmail, `[ProVen Inquiry]: ${subject}`, html);
 
