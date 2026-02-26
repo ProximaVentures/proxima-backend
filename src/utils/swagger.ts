@@ -481,6 +481,113 @@ const swaggerDocument = {
                     404: { description: 'Professional not found' }
                 }
             }
+        },
+        '/api/admin/projects/{id}/meeting': {
+            post: {
+                summary: 'Schedule Project Meeting (Admin)',
+                tags: ['Admin Workspace'],
+                security: [{ bearerAuth: [] }],
+                parameters: [{ in: 'path', name: 'id', required: true, schema: { type: 'string' } }],
+                requestBody: {
+                    required: true,
+                    content: {
+                        'application/json': {
+                            schema: {
+                                type: 'object',
+                                properties: {
+                                    title: { type: 'string' },
+                                    description: { type: 'string' },
+                                    meetingLink: { type: 'string' },
+                                    startTime: { type: 'string', format: 'date-time' },
+                                    duration: { type: 'string' }
+                                },
+                                required: ['title', 'meetingLink', 'startTime']
+                            }
+                        }
+                    }
+                },
+                responses: { 201: { description: 'Meeting scheduled' }, 403: { description: 'Admin only' } }
+            }
+        },
+        '/api/admin/projects/{id}/document': {
+            post: {
+                summary: 'Add Project Document (Admin)',
+                tags: ['Admin Workspace'],
+                security: [{ bearerAuth: [] }],
+                parameters: [{ in: 'path', name: 'id', required: true, schema: { type: 'string' } }],
+                requestBody: {
+                    required: true,
+                    content: {
+                        'application/json': {
+                            schema: {
+                                type: 'object',
+                                properties: {
+                                    title: { type: 'string' },
+                                    url: { type: 'string' },
+                                    type: { type: 'string' },
+                                    description: { type: 'string' },
+                                    professionalIds: { type: 'array', items: { type: 'string' } }
+                                },
+                                required: ['title', 'url', 'type']
+                            }
+                        }
+                    }
+                },
+                responses: { 201: { description: 'Document added' }, 403: { description: 'Admin only' } }
+            }
+        },
+        '/api/admin/projects/{id}/task': {
+            post: {
+                summary: 'Assign Project Task (Admin)',
+                tags: ['Admin Workspace'],
+                security: [{ bearerAuth: [] }],
+                parameters: [{ in: 'path', name: 'id', required: true, schema: { type: 'string' } }],
+                requestBody: {
+                    required: true,
+                    content: {
+                        'application/json': {
+                            schema: {
+                                type: 'object',
+                                properties: {
+                                    title: { type: 'string' },
+                                    description: { type: 'string' },
+                                    status: { type: 'string', enum: ['TODO', 'IN_PROGRESS', 'COMPLETED'] },
+                                    priority: { type: 'string', enum: ['LOW', 'MEDIUM', 'HIGH', 'URGENT'] },
+                                    dueDate: { type: 'string', format: 'date-time' },
+                                    professionalIds: { type: 'array', items: { type: 'string' } }
+                                },
+                                required: ['title']
+                            }
+                        }
+                    }
+                },
+                responses: { 201: { description: 'Task assigned' }, 403: { description: 'Admin only' } }
+            }
+        },
+        '/api/admin/projects/{id}/info': {
+            post: {
+                summary: 'Add Project Info/Dossier (Admin)',
+                tags: ['Admin Workspace'],
+                security: [{ bearerAuth: [] }],
+                parameters: [{ in: 'path', name: 'id', required: true, schema: { type: 'string' } }],
+                requestBody: {
+                    required: true,
+                    content: {
+                        'application/json': {
+                            schema: {
+                                type: 'object',
+                                properties: {
+                                    title: { type: 'string' },
+                                    content: { type: 'string' },
+                                    professionalIds: { type: 'array', items: { type: 'string' } }
+                                },
+                                required: ['title', 'content']
+                            }
+                        }
+                    }
+                },
+                responses: { 201: { description: 'Info added' }, 403: { description: 'Admin only' } }
+            }
         }
     },
 };
