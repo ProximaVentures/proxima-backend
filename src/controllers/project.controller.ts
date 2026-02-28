@@ -428,3 +428,47 @@ export const expressInterest = asyncHandler(async (req: AuthRequest, res: Respon
         data: assignment,
     });
 });
+
+/**
+ * Get My Missions (For Professionals)
+ * Fetches all projects where the professional has an assignment
+ */
+export const getMyMissions = asyncHandler(async (req: AuthRequest, res: Response) => {
+    const userId = req.user?.id;
+    if (!userId) throw new AppError('Unauthorized', 401);
+
+    const assignments = await prisma.projectAssignment.findMany({
+        where: { userId },
+        include: {
+            project: {
+                include: {
+                    client: {
+                        select: {
+                            id: true,
+                            username: true,
+                            profile: {
+                                select: {
+                                    firstName: true,
+                                    lastName: true,
+                                    avatarUrl: true
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        orderBy: { assignedAt: 'desc' }
+    });
+
+    res.status(200).json({
+        success: true,
+        count: assignments.length,
+        data: assignments.map(a => ({
+            ...a.project,
+            assignmentStatus: a.status,
+            assignmentRole: a.role,
+            assignedAt: a.assignedAt
+        }))
+    });
+});

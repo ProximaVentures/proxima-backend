@@ -35,17 +35,17 @@ router.post('/projects/:id/updates', adminController.addProjectUpdate);
 router.delete('/updates/:id', adminController.deleteProjectUpdate);
 
 // Expanded Workspace Management
-router.post('/projects/:id/meetings', adminController.addProjectMeeting);
-router.delete('/meetings/:id', adminController.deleteProjectMeeting);
+router.post('/projects/:id/meeting', adminController.addProjectMeeting);
+router.delete('/meeting/:id', adminController.deleteProjectMeeting);
 
-router.post('/projects/:id/documents', adminController.addProjectDocument);
-router.delete('/documents/:id', adminController.deleteProjectDocument);
+router.post('/projects/:id/document', adminController.addProjectDocument);
+router.delete('/document/:id', adminController.deleteProjectDocument);
 
-router.post('/projects/:id/tasks', adminController.addProjectTask);
-router.delete('/tasks/:id', adminController.deleteProjectTask);
+router.post('/projects/:id/task', adminController.addProjectTask);
+router.delete('/task/:id', adminController.deleteProjectTask);
 
-router.post('/projects/:id/project-info', adminController.addProjectInfo);
-router.delete('/project-info/:id', adminController.deleteProjectInfo);
+router.post('/projects/:id/info', adminController.addProjectInfo);
+router.delete('/info/:id', adminController.deleteProjectInfo);
 
 
 export default router;

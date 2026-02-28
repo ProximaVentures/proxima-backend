@@ -38,6 +38,12 @@ router.get(
     projectController.getMySubmissions
 );
 
+// Get professional's own missions
+router.get(
+    '/my-missions',
+    projectController.getMyMissions
+);
+
 // Public/Protected feed for professionals
 router.get(
     '/feed',

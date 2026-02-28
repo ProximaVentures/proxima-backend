@@ -585,6 +585,12 @@ export const addProjectMeeting = asyncHandler(async (req: Request, res: Response
         throw new AppError('Title, meeting link, and start time are required', 400);
     }
 
+    // Verify project exists
+    const project = await prisma.project.findUnique({ where: { id: projectId } });
+    if (!project) {
+        throw new AppError('Project not found', 404);
+    }
+
     const meeting = await prisma.projectMeeting.create({
         data: {
             projectId,
@@ -631,6 +637,12 @@ export const addProjectDocument = asyncHandler(async (req: Request, res: Respons
         throw new AppError('Title and URL are required', 400);
     }
 
+    // Verify project exists
+    const project = await prisma.project.findUnique({ where: { id: projectId } });
+    if (!project) {
+        throw new AppError('Project not found', 404);
+    }
+
     const document = await prisma.projectDocument.create({
         data: {
             projectId,
@@ -675,6 +687,12 @@ export const addProjectTask = asyncHandler(async (req: Request, res: Response) =
         throw new AppError('Title is required', 400);
     }
 
+    // Verify project exists
+    const project = await prisma.project.findUnique({ where: { id: projectId } });
+    if (!project) {
+        throw new AppError('Project not found', 404);
+    }
+
     const task = await prisma.projectTask.create({
         data: {
             projectId,
@@ -717,6 +735,12 @@ export const addProjectInfo = asyncHandler(async (req: Request, res: Response) =
 
     if (!title || !content) {
         throw new AppError('Title and content are required', 400);
+    }
+
+    // Verify project exists
+    const project = await prisma.project.findUnique({ where: { id: projectId } });
+    if (!project) {
+        throw new AppError('Project not found', 404);
     }
 
     const info = await prisma.projectInfo.create({
