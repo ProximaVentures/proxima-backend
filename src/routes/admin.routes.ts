@@ -29,21 +29,27 @@ router.get('/interests', adminController.getAllInterests);
 router.delete('/interests/:id', adminController.declineInterest);
 
 // Handover & Communication
+router.get('/projects/:id/resources', adminController.getProjectResources);
 router.post('/projects/:id/resources', adminController.addProjectResource);
 router.delete('/resources/:id', adminController.deleteProjectResource);
+router.get('/projects/:id/updates', adminController.getProjectUpdates);
 router.post('/projects/:id/updates', adminController.addProjectUpdate);
 router.delete('/updates/:id', adminController.deleteProjectUpdate);
 
 // Expanded Workspace Management
+router.get('/projects/:id/meetings', adminController.getProjectMeetings);
 router.post('/projects/:id/meeting', adminController.addProjectMeeting);
 router.delete('/meeting/:id', adminController.deleteProjectMeeting);
 
+router.get('/projects/:id/documents', adminController.getProjectDocuments);
 router.post('/projects/:id/document', adminController.addProjectDocument);
 router.delete('/document/:id', adminController.deleteProjectDocument);
 
+router.get('/projects/:id/tasks', adminController.getProjectTasks);
 router.post('/projects/:id/task', adminController.addProjectTask);
 router.delete('/task/:id', adminController.deleteProjectTask);
 
+router.get('/projects/:id/info', adminController.getProjectInfo);
 router.post('/projects/:id/info', adminController.addProjectInfo);
 router.delete('/info/:id', adminController.deleteProjectInfo);
 

@@ -575,6 +575,120 @@ export const deleteProjectUpdate = asyncHandler(async (req: Request, res: Respon
 });
 
 /**
+ * Get Project Meetings
+ */
+export const getProjectMeetings = asyncHandler(async (req: Request, res: Response) => {
+    const projectId = req.params.id as string;
+
+    const project = await prisma.project.findUnique({ where: { id: projectId } });
+    if (!project) {
+        throw new AppError('Project not found', 404);
+    }
+
+    const meetings = await prisma.projectMeeting.findMany({
+        where: { projectId },
+        orderBy: { startTime: 'desc' }
+    });
+
+    res.status(200).json({ success: true, count: meetings.length, data: meetings });
+});
+
+/**
+ * Get Project Documents
+ */
+export const getProjectDocuments = asyncHandler(async (req: Request, res: Response) => {
+    const projectId = req.params.id as string;
+
+    const project = await prisma.project.findUnique({ where: { id: projectId } });
+    if (!project) {
+        throw new AppError('Project not found', 404);
+    }
+
+    const documents = await prisma.projectDocument.findMany({
+        where: { projectId },
+        orderBy: { createdAt: 'desc' }
+    });
+
+    res.status(200).json({ success: true, count: documents.length, data: documents });
+});
+
+/**
+ * Get Project Tasks
+ */
+export const getProjectTasks = asyncHandler(async (req: Request, res: Response) => {
+    const projectId = req.params.id as string;
+
+    const project = await prisma.project.findUnique({ where: { id: projectId } });
+    if (!project) {
+        throw new AppError('Project not found', 404);
+    }
+
+    const tasks = await prisma.projectTask.findMany({
+        where: { projectId },
+        orderBy: { createdAt: 'desc' }
+    });
+
+    res.status(200).json({ success: true, count: tasks.length, data: tasks });
+});
+
+/**
+ * Get Project Info
+ */
+export const getProjectInfo = asyncHandler(async (req: Request, res: Response) => {
+    const projectId = req.params.id as string;
+
+    const project = await prisma.project.findUnique({ where: { id: projectId } });
+    if (!project) {
+        throw new AppError('Project not found', 404);
+    }
+
+    const info = await prisma.projectInfo.findMany({
+        where: { projectId },
+        orderBy: { createdAt: 'desc' }
+    });
+
+    res.status(200).json({ success: true, count: info.length, data: info });
+});
+
+/**
+ * Get Project Resources
+ */
+export const getProjectResources = asyncHandler(async (req: Request, res: Response) => {
+    const projectId = req.params.id as string;
+
+    const project = await prisma.project.findUnique({ where: { id: projectId } });
+    if (!project) {
+        throw new AppError('Project not found', 404);
+    }
+
+    const resources = await prisma.projectResource.findMany({
+        where: { projectId },
+        orderBy: { createdAt: 'desc' }
+    });
+
+    res.status(200).json({ success: true, count: resources.length, data: resources });
+});
+
+/**
+ * Get Project Updates
+ */
+export const getProjectUpdates = asyncHandler(async (req: Request, res: Response) => {
+    const projectId = req.params.id as string;
+
+    const project = await prisma.project.findUnique({ where: { id: projectId } });
+    if (!project) {
+        throw new AppError('Project not found', 404);
+    }
+
+    const updates = await prisma.projectUpdate.findMany({
+        where: { projectId },
+        orderBy: { createdAt: 'desc' }
+    });
+
+    res.status(200).json({ success: true, count: updates.length, data: updates });
+});
+
+/**
  * Add Project Meeting
  */
 export const addProjectMeeting = asyncHandler(async (req: Request, res: Response) => {

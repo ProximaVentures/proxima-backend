@@ -487,7 +487,7 @@ const swaggerDocument = {
                 summary: 'Schedule Project Meeting (Admin)',
                 tags: ['Admin Workspace'],
                 security: [{ bearerAuth: [] }],
-                parameters: [{ in: 'path', name: 'id', required: true, schema: { type: 'string' } }],
+                parameters: [{ in: 'path', name: 'id', required: true, schema: { type: 'string' }, description: 'Project ID' }],
                 requestBody: {
                     required: true,
                     content: {
@@ -499,14 +499,25 @@ const swaggerDocument = {
                                     description: { type: 'string' },
                                     meetingLink: { type: 'string' },
                                     startTime: { type: 'string', format: 'date-time' },
-                                    duration: { type: 'string' }
+                                    endTime: { type: 'string', format: 'date-time' },
+                                    duration: { type: 'string', example: '45 mins' },
+                                    attendeeIds: { type: 'array', items: { type: 'string' } }
                                 },
                                 required: ['title', 'meetingLink', 'startTime']
                             }
                         }
                     }
                 },
-                responses: { 201: { description: 'Meeting scheduled' }, 403: { description: 'Admin only' } }
+                responses: { 201: { description: 'Meeting scheduled' }, 404: { description: 'Project not found' } }
+            }
+        },
+        '/api/admin/projects/{id}/meetings': {
+            get: {
+                summary: 'Get Project Meetings (Admin)',
+                tags: ['Admin Workspace'],
+                security: [{ bearerAuth: [] }],
+                parameters: [{ in: 'path', name: 'id', required: true, schema: { type: 'string' }, description: 'Project ID' }],
+                responses: { 200: { description: 'Meetings retrieved' }, 404: { description: 'Project not found' } }
             }
         },
         '/api/admin/projects/{id}/document': {
@@ -514,7 +525,7 @@ const swaggerDocument = {
                 summary: 'Add Project Document (Admin)',
                 tags: ['Admin Workspace'],
                 security: [{ bearerAuth: [] }],
-                parameters: [{ in: 'path', name: 'id', required: true, schema: { type: 'string' } }],
+                parameters: [{ in: 'path', name: 'id', required: true, schema: { type: 'string' }, description: 'Project ID' }],
                 requestBody: {
                     required: true,
                     content: {
@@ -524,16 +535,25 @@ const swaggerDocument = {
                                 properties: {
                                     title: { type: 'string' },
                                     url: { type: 'string' },
-                                    type: { type: 'string' },
+                                    type: { type: 'string', enum: ['SRS', 'SPRINT', 'DELIVERABLE', 'DOC'] },
                                     description: { type: 'string' },
                                     professionalIds: { type: 'array', items: { type: 'string' } }
                                 },
-                                required: ['title', 'url', 'type']
+                                required: ['title', 'url']
                             }
                         }
                     }
                 },
-                responses: { 201: { description: 'Document added' }, 403: { description: 'Admin only' } }
+                responses: { 201: { description: 'Document added' }, 404: { description: 'Project not found' } }
+            }
+        },
+        '/api/admin/projects/{id}/documents': {
+            get: {
+                summary: 'Get Project Documents (Admin)',
+                tags: ['Admin Workspace'],
+                security: [{ bearerAuth: [] }],
+                parameters: [{ in: 'path', name: 'id', required: true, schema: { type: 'string' }, description: 'Project ID' }],
+                responses: { 200: { description: 'Documents retrieved' }, 404: { description: 'Project not found' } }
             }
         },
         '/api/admin/projects/{id}/task': {
@@ -541,7 +561,7 @@ const swaggerDocument = {
                 summary: 'Assign Project Task (Admin)',
                 tags: ['Admin Workspace'],
                 security: [{ bearerAuth: [] }],
-                parameters: [{ in: 'path', name: 'id', required: true, schema: { type: 'string' } }],
+                parameters: [{ in: 'path', name: 'id', required: true, schema: { type: 'string' }, description: 'Project ID' }],
                 requestBody: {
                     required: true,
                     content: {
@@ -561,15 +581,31 @@ const swaggerDocument = {
                         }
                     }
                 },
-                responses: { 201: { description: 'Task assigned' }, 403: { description: 'Admin only' } }
+                responses: { 201: { description: 'Task assigned' }, 404: { description: 'Project not found' } }
+            }
+        },
+        '/api/admin/projects/{id}/tasks': {
+            get: {
+                summary: 'Get Project Tasks (Admin)',
+                tags: ['Admin Workspace'],
+                security: [{ bearerAuth: [] }],
+                parameters: [{ in: 'path', name: 'id', required: true, schema: { type: 'string' }, description: 'Project ID' }],
+                responses: { 200: { description: 'Tasks retrieved' }, 404: { description: 'Project not found' } }
             }
         },
         '/api/admin/projects/{id}/info': {
+            get: {
+                summary: 'Get Project Info/Dossier (Admin)',
+                tags: ['Admin Workspace'],
+                security: [{ bearerAuth: [] }],
+                parameters: [{ in: 'path', name: 'id', required: true, schema: { type: 'string' }, description: 'Project ID' }],
+                responses: { 200: { description: 'Project info retrieved' }, 404: { description: 'Project not found' } }
+            },
             post: {
                 summary: 'Add Project Info/Dossier (Admin)',
                 tags: ['Admin Workspace'],
                 security: [{ bearerAuth: [] }],
-                parameters: [{ in: 'path', name: 'id', required: true, schema: { type: 'string' } }],
+                parameters: [{ in: 'path', name: 'id', required: true, schema: { type: 'string' }, description: 'Project ID' }],
                 requestBody: {
                     required: true,
                     content: {
@@ -586,7 +622,73 @@ const swaggerDocument = {
                         }
                     }
                 },
-                responses: { 201: { description: 'Info added' }, 403: { description: 'Admin only' } }
+                responses: { 201: { description: 'Info added' }, 404: { description: 'Project not found' } }
+            }
+        },
+        '/api/admin/projects/{id}/resources': {
+            get: {
+                summary: 'Get Project Resources (Admin)',
+                tags: ['Admin Workspace'],
+                security: [{ bearerAuth: [] }],
+                parameters: [{ in: 'path', name: 'id', required: true, schema: { type: 'string' }, description: 'Project ID' }],
+                responses: { 200: { description: 'Resources retrieved' }, 404: { description: 'Project not found' } }
+            },
+            post: {
+                summary: 'Add Project Resource (Admin)',
+                tags: ['Admin Workspace'],
+                security: [{ bearerAuth: [] }],
+                parameters: [{ in: 'path', name: 'id', required: true, schema: { type: 'string' }, description: 'Project ID' }],
+                requestBody: {
+                    required: true,
+                    content: {
+                        'application/json': {
+                            schema: {
+                                type: 'object',
+                                properties: {
+                                    title: { type: 'string' },
+                                    url: { type: 'string' },
+                                    type: { type: 'string', enum: ['LINK', 'FILE'] },
+                                    platform: { type: 'string', enum: ['GITHUB', 'FIGMA', 'JIRA', 'TRELLO', 'OTHER'] },
+                                    description: { type: 'string' }
+                                },
+                                required: ['title', 'url']
+                            }
+                        }
+                    }
+                },
+                responses: { 201: { description: 'Resource added' }, 404: { description: 'Project not found' } }
+            }
+        },
+        '/api/admin/projects/{id}/updates': {
+            get: {
+                summary: 'Get Project Updates (Admin)',
+                tags: ['Admin Workspace'],
+                security: [{ bearerAuth: [] }],
+                parameters: [{ in: 'path', name: 'id', required: true, schema: { type: 'string' }, description: 'Project ID' }],
+                responses: { 200: { description: 'Updates retrieved' }, 404: { description: 'Project not found' } }
+            },
+            post: {
+                summary: 'Add Project Update/Briefing (Admin)',
+                tags: ['Admin Workspace'],
+                security: [{ bearerAuth: [] }],
+                parameters: [{ in: 'path', name: 'id', required: true, schema: { type: 'string' }, description: 'Project ID' }],
+                requestBody: {
+                    required: true,
+                    content: {
+                        'application/json': {
+                            schema: {
+                                type: 'object',
+                                properties: {
+                                    title: { type: 'string' },
+                                    content: { type: 'string' },
+                                    isUrgent: { type: 'boolean', default: false }
+                                },
+                                required: ['title', 'content']
+                            }
+                        }
+                    }
+                },
+                responses: { 201: { description: 'Update added' }, 404: { description: 'Project not found' } }
             }
         }
     },
