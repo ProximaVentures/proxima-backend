@@ -507,28 +507,32 @@ export const addProjectResource = asyncHandler(async (req: Request, res: Respons
             platform: platform || 'OTHER',
             description
         },
-        include: { project: { include: { assignments: { where: { status: 'ACTIVE' }, include: { user: true } } } } }
+        include: { project: { include: { assignments: { include: { user: true } } } } }
     });
 
-    // Notify all active professionals on the project
+    // Notify ALL professionals assigned to this project (any status)
     const professionals = resource.project.assignments.map(a => a.user);
+    console.log(`[Notify Resource] Project: ${resource.project.title}, Professionals found: ${professionals.length}, IDs: ${professionals.map(p => p.id).join(', ')}`);
     for (const pro of professionals) {
-        if (pro.email) {
-            await prisma.notification.create({
-                data: {
-                    userId: pro.id,
-                    title: 'New Resource Added',
-                    message: `A new resource "${title}" has been added to project "${resource.project.title}"`,
-                    type: 'RESOURCE',
-                    link: `/dashboard/professional/projects/${projectId}`
-                }
-            });
+        // Always create in-app notification
+        await prisma.notification.create({
+            data: {
+                userId: pro.id,
+                title: 'New Resource Added',
+                message: `A new resource "${title}" has been added to project "${resource.project.title}"`,
+                type: 'RESOURCE',
+                link: `/dashboard/professional/projects/${projectId}`
+            }
+        });
+        console.log(`[Notify Resource] Created notification for user ${pro.id} (${pro.email})`);
 
+        // Send email if available
+        if (pro.email) {
             await sendEmail(
                 pro.email,
                 `📁 New Resource: ${title}`,
                 `A new resource has been added to your project <strong>${resource.project.title}</strong>.<br><br><strong>Title:</strong> ${title}<br><strong>Type:</strong> ${resource.type}<br><br><a href="${process.env.FRONTEND_URL}/dashboard/professional/projects/${projectId}">View Project</a>`
-            ).catch(err => console.error('Email failed:', err));
+            ).catch(err => console.error('[Notify Resource] Email failed:', err));
         }
     }
 
@@ -597,11 +601,12 @@ export const addProjectUpdate = asyncHandler(async (req: AuthRequest, res: Respo
             isUrgent: !!isUrgent,
             authorId: req.user?.id || 'admin'
         },
-        include: { project: { include: { assignments: { where: { status: 'ACTIVE' }, include: { user: true } } } } }
+        include: { project: { include: { assignments: { include: { user: true } } } } }
     });
 
-    // Notify all active professionals on the project
+    // Notify ALL professionals assigned to this project
     const professionals = update.project.assignments.map(a => a.user);
+    console.log(`[Notify Update] Project: ${update.project.title}, Professionals found: ${professionals.length}`);
     for (const pro of professionals) {
         await prisma.notification.create({
             data: {
@@ -612,13 +617,14 @@ export const addProjectUpdate = asyncHandler(async (req: AuthRequest, res: Respo
                 link: `/dashboard/professional/projects/${projectId}`
             }
         });
+        console.log(`[Notify Update] Created notification for user ${pro.id} (${pro.email})`);
 
         if (pro.email) {
             await sendEmail(
                 pro.email,
                 `${isUrgent ? '🚨' : '📝'} Project Update: ${title}`,
                 `A new update has been posted for <strong>${update.project.title}</strong>.<br><br><strong>Title:</strong> ${title}<br><strong>Urgency:</strong> ${isUrgent ? 'High' : 'Normal'}<br><br><a href="${process.env.FRONTEND_URL}/dashboard/professional/projects/${projectId}">Read Update</a>`
-            ).catch(err => console.error('Email failed:', err));
+            ).catch(err => console.error('[Notify Update] Email failed:', err));
         }
     }
 
@@ -814,13 +820,12 @@ export const addProjectMeeting = asyncHandler(async (req: Request, res: Response
         }
     });
 
-    // Default to all active professionals if no specific attendees are provided
+    // Default to ALL professionals on the project if no specific attendees
     let notifyUserIds = attendeeIds || [];
     if (notifyUserIds.length === 0) {
-        notifyUserIds = meeting.project.assignments
-            .filter(a => a.status === 'ACTIVE')
-            .map(a => a.userId);
+        notifyUserIds = meeting.project.assignments.map(a => a.userId);
     }
+    console.log(`[Notify Meeting] Project: ${meeting.project.title}, Notify IDs: ${notifyUserIds.join(', ')}`);
 
     // Notify attendees
     if (notifyUserIds.length > 0) {
@@ -928,13 +933,12 @@ export const addProjectDocument = asyncHandler(async (req: Request, res: Respons
         }
     });
 
-    // Default to all active professionals if no specific professionals are provided
+    // Default to ALL professionals on the project if no specific ones provided
     let notifyUserIds = professionalIds || [];
     if (notifyUserIds.length === 0) {
-        notifyUserIds = document.project.assignments
-            .filter(a => a.status === 'ACTIVE')
-            .map(a => a.userId);
+        notifyUserIds = document.project.assignments.map(a => a.userId);
     }
+    console.log(`[Notify Document] Project: ${document.project.title}, Notify IDs: ${notifyUserIds.join(', ')}`);
 
     // Notify targeted professionals
     if (notifyUserIds.length > 0) {
@@ -1047,13 +1051,12 @@ export const addProjectTask = asyncHandler(async (req: Request, res: Response) =
         }
     });
 
-    // Default to all active professionals if no specific professionals are provided
+    // Default to ALL professionals on the project if no specific ones assigned
     let notifyUserIds = task.professionalIds;
     if (notifyUserIds.length === 0) {
-        notifyUserIds = task.project.assignments
-            .filter(a => a.status === 'ACTIVE')
-            .map(a => a.userId);
+        notifyUserIds = task.project.assignments.map(a => a.userId);
     }
+    console.log(`[Notify Task] Project: ${task.project.title}, Notify IDs: ${notifyUserIds.join(', ')}`);
 
     // Notify assigned professionals
     if (notifyUserIds.length > 0) {
