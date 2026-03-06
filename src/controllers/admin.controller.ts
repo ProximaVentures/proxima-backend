@@ -379,7 +379,7 @@ export const getProjectInterests = asyncHandler(async (req: Request, res: Respon
     const interests = await prisma.projectAssignment.findMany({
         where: {
             projectId: id,
-            status: 'INTERESTED'
+            status: { in: ['INTERESTED', 'ACTIVE', 'ACCEPTED', 'ASSIGNED'] }
         },
         include: {
             user: {
@@ -539,6 +539,30 @@ export const addProjectResource = asyncHandler(async (req: Request, res: Respons
 });
 
 /**
+ * Edit Project Resource
+ */
+export const editProjectResource = asyncHandler(async (req: Request, res: Response) => {
+    const id = req.params.id as string;
+    const { title, url, type, platform, description } = req.body;
+
+    const resource = await prisma.projectResource.update({
+        where: { id },
+        data: {
+            title,
+            url,
+            type,
+            platform,
+            description
+        }
+    });
+
+    res.status(200).json({
+        success: true,
+        data: resource
+    });
+});
+
+/**
  * Delete Project Resource
  */
 export const deleteProjectResource = asyncHandler(async (req: Request, res: Response) => {
@@ -599,6 +623,27 @@ export const addProjectUpdate = asyncHandler(async (req: AuthRequest, res: Respo
     }
 
     res.status(201).json({
+        success: true,
+        data: update
+    });
+});
+
+/**
+ * Edit Project Update
+ */
+export const editProjectUpdate = asyncHandler(async (req: Request, res: Response) => {
+    const id = req.params.id as string;
+    const { title, content } = req.body;
+
+    const update = await prisma.projectUpdate.update({
+        where: { id },
+        data: {
+            title,
+            content
+        }
+    });
+
+    res.status(200).json({
         success: true,
         data: update
     });
@@ -808,6 +853,33 @@ export const addProjectMeeting = asyncHandler(async (req: Request, res: Response
 });
 
 /**
+ * Edit Project Meeting
+ */
+export const editProjectMeeting = asyncHandler(async (req: Request, res: Response) => {
+    const id = req.params.id as string;
+    const { title, description, meetingLink, startTime, endTime, duration } = req.body;
+
+    const updateData: any = {
+        title,
+        description,
+        meetingLink,
+        duration
+    };
+    if (startTime) updateData.startTime = new Date(startTime);
+    if (endTime) updateData.endTime = new Date(endTime);
+
+    const meeting = await prisma.projectMeeting.update({
+        where: { id },
+        data: updateData
+    });
+
+    res.status(200).json({
+        success: true,
+        data: meeting
+    });
+});
+
+/**
  * Delete Project Meeting
  */
 export const deleteProjectMeeting = asyncHandler(async (req: Request, res: Response) => {
@@ -895,6 +967,29 @@ export const addProjectDocument = asyncHandler(async (req: Request, res: Respons
 });
 
 /**
+ * Edit Project Document
+ */
+export const editProjectDocument = asyncHandler(async (req: Request, res: Response) => {
+    const id = req.params.id as string;
+    const { title, url, type, description } = req.body;
+
+    const document = await prisma.projectDocument.update({
+        where: { id },
+        data: {
+            title,
+            url,
+            type,
+            description
+        }
+    });
+
+    res.status(200).json({
+        success: true,
+        data: document
+    });
+});
+
+/**
  * Delete Project Document
  */
 export const deleteProjectDocument = asyncHandler(async (req: Request, res: Response) => {
@@ -920,6 +1015,14 @@ export const addProjectTask = asyncHandler(async (req: Request, res: Response) =
     if (!title) {
         throw new AppError('Title is required', 400);
     }
+
+    const existingTask = await prisma.projectTask.findFirst({
+        where: { projectId, title }
+    });
+    if (existingTask) {
+        throw new AppError('A task with this title already exists in the project', 400);
+    }
+
 
     // Verify project exists
     const project = await prisma.project.findUnique({ where: { id: projectId } });
@@ -983,6 +1086,47 @@ export const addProjectTask = asyncHandler(async (req: Request, res: Response) =
 });
 
 /**
+ * Edit Project Task
+ */
+export const editProjectTask = asyncHandler(async (req: Request, res: Response) => {
+    const id = req.params.id as string;
+    const { title, description, priority, dueDate, assignedToId, status } = req.body;
+
+    // Optional duplicate title check for edited task
+    if (title) {
+        const currentTask = await prisma.projectTask.findUnique({ where: { id } });
+        if (currentTask && title !== currentTask.title) {
+            const existingTask = await prisma.projectTask.findFirst({
+                where: { projectId: currentTask.projectId, title }
+            });
+            if (existingTask) {
+                throw new AppError('A task with this title already exists in the project', 400);
+            }
+        }
+    }
+
+    const updateData: any = {
+        title,
+        description,
+        priority,
+        status,
+        professionalIds: assignedToId ? [assignedToId] : undefined
+    };
+
+    if (dueDate) updateData.dueDate = new Date(dueDate);
+
+    const task = await prisma.projectTask.update({
+        where: { id },
+        data: updateData
+    });
+
+    res.status(200).json({
+        success: true,
+        data: task
+    });
+});
+
+/**
  * Delete Project Task
  */
 export const deleteProjectTask = asyncHandler(async (req: Request, res: Response) => {
@@ -1025,6 +1169,27 @@ export const addProjectInfo = asyncHandler(async (req: Request, res: Response) =
     });
 
     res.status(201).json({
+        success: true,
+        data: info
+    });
+});
+
+/**
+ * Edit Project Info
+ */
+export const editProjectInfo = asyncHandler(async (req: Request, res: Response) => {
+    const id = req.params.id as string;
+    const { title, content } = req.body;
+
+    const info = await prisma.projectInfo.update({
+        where: { id },
+        data: {
+            title,
+            content
+        }
+    });
+
+    res.status(200).json({
         success: true,
         data: info
     });
