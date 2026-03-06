@@ -762,12 +762,24 @@ export const addProjectMeeting = asyncHandler(async (req: Request, res: Response
             duration,
             attendeeIds: attendeeIds || []
         },
-        include: { project: true }
+        include: {
+            project: {
+                include: { assignments: true }
+            }
+        }
     });
 
+    // Default to all active professionals if no specific attendees are provided
+    let notifyUserIds = attendeeIds || [];
+    if (notifyUserIds.length === 0) {
+        notifyUserIds = meeting.project.assignments
+            .filter(a => a.status === 'ACTIVE')
+            .map(a => a.userId);
+    }
+
     // Notify attendees
-    if (attendeeIds && attendeeIds.length > 0) {
-        const users = await prisma.user.findMany({ where: { id: { in: attendeeIds } } });
+    if (notifyUserIds.length > 0) {
+        const users = await prisma.user.findMany({ where: { id: { in: notifyUserIds } } });
         for (const user of users) {
             await prisma.notification.create({
                 data: {
@@ -837,12 +849,24 @@ export const addProjectDocument = asyncHandler(async (req: Request, res: Respons
             description,
             professionalIds: professionalIds || []
         },
-        include: { project: true }
+        include: {
+            project: {
+                include: { assignments: true }
+            }
+        }
     });
 
+    // Default to all active professionals if no specific professionals are provided
+    let notifyUserIds = professionalIds || [];
+    if (notifyUserIds.length === 0) {
+        notifyUserIds = document.project.assignments
+            .filter(a => a.status === 'ACTIVE')
+            .map(a => a.userId);
+    }
+
     // Notify targeted professionals
-    if (professionalIds && professionalIds.length > 0) {
-        const users = await prisma.user.findMany({ where: { id: { in: professionalIds } } });
+    if (notifyUserIds.length > 0) {
+        const users = await prisma.user.findMany({ where: { id: { in: notifyUserIds } } });
         for (const user of users) {
             await prisma.notification.create({
                 data: {
@@ -891,7 +915,7 @@ export const deleteProjectDocument = asyncHandler(async (req: Request, res: Resp
  */
 export const addProjectTask = asyncHandler(async (req: Request, res: Response) => {
     const projectId = req.params.id as string;
-    const { title, description, priority, dueDate, professionalIds } = req.body;
+    const { title, description, priority, dueDate, professionalIds, assignedToId } = req.body;
 
     if (!title) {
         throw new AppError('Title is required', 400);
@@ -908,16 +932,29 @@ export const addProjectTask = asyncHandler(async (req: Request, res: Response) =
             projectId,
             title,
             description,
+            status: 'TODO',
             priority: priority || 'MEDIUM',
             dueDate: dueDate ? new Date(dueDate) : null,
-            professionalIds: professionalIds || []
+            professionalIds: professionalIds || (assignedToId ? [assignedToId] : [])
         },
-        include: { project: true }
+        include: {
+            project: {
+                include: { assignments: true }
+            }
+        }
     });
 
+    // Default to all active professionals if no specific professionals are provided
+    let notifyUserIds = task.professionalIds;
+    if (notifyUserIds.length === 0) {
+        notifyUserIds = task.project.assignments
+            .filter(a => a.status === 'ACTIVE')
+            .map(a => a.userId);
+    }
+
     // Notify assigned professionals
-    if (professionalIds && professionalIds.length > 0) {
-        const users = await prisma.user.findMany({ where: { id: { in: professionalIds } } });
+    if (notifyUserIds.length > 0) {
+        const users = await prisma.user.findMany({ where: { id: { in: notifyUserIds } } });
         for (const user of users) {
             await prisma.notification.create({
                 data: {
