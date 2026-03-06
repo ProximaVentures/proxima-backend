@@ -28,6 +28,8 @@ services:
         sync: false
       - key: ALLOWED_ORIGINS
         sync: false
+      - key: FRONTEND_URL
+        value: "https://www.provenworld.com"
       - key: PORT
         value: 5000
 
