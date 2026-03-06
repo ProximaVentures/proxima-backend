@@ -506,8 +506,31 @@ export const addProjectResource = asyncHandler(async (req: Request, res: Respons
             type: type || 'LINK',
             platform: platform || 'OTHER',
             description
-        }
+        },
+        include: { project: { include: { assignments: { where: { status: 'ACTIVE' }, include: { user: true } } } } }
     });
+
+    // Notify all active professionals on the project
+    const professionals = resource.project.assignments.map(a => a.user);
+    for (const pro of professionals) {
+        if (pro.email) {
+            await prisma.notification.create({
+                data: {
+                    userId: pro.id,
+                    title: 'New Resource Added',
+                    message: `A new resource "${title}" has been added to project "${resource.project.title}"`,
+                    type: 'RESOURCE',
+                    link: `/dashboard/professional/projects/${projectId}`
+                }
+            });
+
+            await sendEmail(
+                pro.email,
+                `📁 New Resource: ${title}`,
+                `A new resource has been added to your project <strong>${resource.project.title}</strong>.<br><br><strong>Title:</strong> ${title}<br><strong>Type:</strong> ${resource.type}<br><br><a href="${process.env.FRONTEND_URL}/dashboard/professional/projects/${projectId}">View Project</a>`
+            ).catch(err => console.error('Email failed:', err));
+        }
+    }
 
     res.status(201).json({
         success: true,
@@ -549,8 +572,31 @@ export const addProjectUpdate = asyncHandler(async (req: AuthRequest, res: Respo
             content,
             isUrgent: !!isUrgent,
             authorId: req.user?.id || 'admin'
-        }
+        },
+        include: { project: { include: { assignments: { where: { status: 'ACTIVE' }, include: { user: true } } } } }
     });
+
+    // Notify all active professionals on the project
+    const professionals = update.project.assignments.map(a => a.user);
+    for (const pro of professionals) {
+        await prisma.notification.create({
+            data: {
+                userId: pro.id,
+                title: isUrgent ? '🚨 Urgent Project Update' : 'New Project Update',
+                message: `"${title}" - Project: ${update.project.title}`,
+                type: 'BRIEFING',
+                link: `/dashboard/professional/projects/${projectId}`
+            }
+        });
+
+        if (pro.email) {
+            await sendEmail(
+                pro.email,
+                `${isUrgent ? '🚨' : '📝'} Project Update: ${title}`,
+                `A new update has been posted for <strong>${update.project.title}</strong>.<br><br><strong>Title:</strong> ${title}<br><strong>Urgency:</strong> ${isUrgent ? 'High' : 'Normal'}<br><br><a href="${process.env.FRONTEND_URL}/dashboard/professional/projects/${projectId}">Read Update</a>`
+            ).catch(err => console.error('Email failed:', err));
+        }
+    }
 
     res.status(201).json({
         success: true,
@@ -715,8 +761,33 @@ export const addProjectMeeting = asyncHandler(async (req: Request, res: Response
             endTime: endTime ? new Date(endTime) : null,
             duration,
             attendeeIds: attendeeIds || []
-        }
+        },
+        include: { project: true }
     });
+
+    // Notify attendees
+    if (attendeeIds && attendeeIds.length > 0) {
+        const users = await prisma.user.findMany({ where: { id: { in: attendeeIds } } });
+        for (const user of users) {
+            await prisma.notification.create({
+                data: {
+                    userId: user.id,
+                    title: 'New Meeting Scheduled',
+                    message: `You have been invited to a meeting: "${title}" for project "${meeting.project.title}"`,
+                    type: 'MEETING',
+                    link: `/dashboard/professional/projects/${projectId}`
+                }
+            });
+
+            if (user.email) {
+                await sendEmail(
+                    user.email,
+                    `📅 Meeting Invitation: ${title}`,
+                    `You have been invited to a meeting for <strong>${meeting.project.title}</strong>.<br><br><strong>Title:</strong> ${title}<br><strong>Time:</strong> ${new Date(startTime).toLocaleString()}<br><br><a href="${process.env.FRONTEND_URL}/dashboard/professional/projects/${projectId}">Join from Dashboard</a>`
+                ).catch(err => console.error('Email failed:', err));
+            }
+        }
+    }
 
     res.status(201).json({
         success: true,
@@ -765,8 +836,33 @@ export const addProjectDocument = asyncHandler(async (req: Request, res: Respons
             type: type || 'DOC',
             description,
             professionalIds: professionalIds || []
-        }
+        },
+        include: { project: true }
     });
+
+    // Notify targeted professionals
+    if (professionalIds && professionalIds.length > 0) {
+        const users = await prisma.user.findMany({ where: { id: { in: professionalIds } } });
+        for (const user of users) {
+            await prisma.notification.create({
+                data: {
+                    userId: user.id,
+                    title: 'New Document Shared',
+                    message: `A new document "${title}" has been shared with you for project "${document.project.title}"`,
+                    type: 'DOC',
+                    link: `/dashboard/professional/projects/${projectId}`
+                }
+            });
+
+            if (user.email) {
+                await sendEmail(
+                    user.email,
+                    `📄 New Document: ${title}`,
+                    `A new document has been shared with you for <strong>${document.project.title}</strong>.<br><br><strong>Title:</strong> ${title}<br><br><a href="${process.env.FRONTEND_URL}/dashboard/professional/projects/${projectId}">View Project</a>`
+                ).catch(err => console.error('Email failed:', err));
+            }
+        }
+    }
 
     res.status(201).json({
         success: true,
@@ -815,8 +911,33 @@ export const addProjectTask = asyncHandler(async (req: Request, res: Response) =
             priority: priority || 'MEDIUM',
             dueDate: dueDate ? new Date(dueDate) : null,
             professionalIds: professionalIds || []
-        }
+        },
+        include: { project: true }
     });
+
+    // Notify assigned professionals
+    if (professionalIds && professionalIds.length > 0) {
+        const users = await prisma.user.findMany({ where: { id: { in: professionalIds } } });
+        for (const user of users) {
+            await prisma.notification.create({
+                data: {
+                    userId: user.id,
+                    title: 'New Task Assigned',
+                    message: `You have been assigned: "${title}" in "${task.project.title}"`,
+                    type: 'TASK',
+                    link: `/dashboard/professional/projects/${projectId}`
+                }
+            });
+
+            if (user.email) {
+                await sendEmail(
+                    user.email,
+                    `✅ New Task: ${title}`,
+                    `You have a new task for <strong>${task.project.title}</strong>.<br><br><strong>Task:</strong> ${title}<br><strong>Priority:</strong> ${priority || 'MEDIUM'}<br><strong>Due Date:</strong> ${dueDate ? new Date(dueDate).toLocaleDateString() : 'N/A'}<br><br><a href="${process.env.FRONTEND_URL}/dashboard/professional/projects/${projectId}">View Task</a>`
+                ).catch(err => console.error('Email failed:', err));
+            }
+        }
+    }
 
     res.status(201).json({
         success: true,

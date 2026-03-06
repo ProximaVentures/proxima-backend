@@ -87,6 +87,7 @@ model User {
   projects      Project[]
   pitches       InvestmentPitch[]
   assignments   ProjectAssignment[]
+  notifications Notification[]
 }
 
 model Profile {
@@ -253,4 +254,16 @@ model InvestmentPitch {
   client            User        @relation(fields: [clientId], references: [id], onDelete: Cascade)
   createdAt         DateTime    @default(now())
   updatedAt         DateTime    @updatedAt
+}
+
+model Notification {
+  id        String   @id @default(cuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  title     String
+  message   String
+  type      String   // TASK, RESOURCE, MEETING, BRIEFING, DOC, INFO
+  link      String?  // Deep link to the project/tab
+  isRead    Boolean  @default(false)
+  createdAt DateTime @default(now())
 }
