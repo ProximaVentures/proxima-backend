@@ -54,6 +54,7 @@ router.get('/projects/:id/tasks', adminController.getProjectTasks);
 router.post('/projects/:id/task', adminController.addProjectTask);
 router.put('/task/:id', adminController.editProjectTask);
 router.delete('/task/:id', adminController.deleteProjectTask);
+router.patch('/tasks/:id/review', adminController.reviewTask);
 
 router.get('/projects/:id/info', adminController.getProjectInfo);
 router.post('/projects/:id/info', adminController.addProjectInfo);

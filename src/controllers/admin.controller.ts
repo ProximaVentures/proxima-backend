@@ -1028,11 +1028,11 @@ export const addProjectTask = asyncHandler(async (req: Request, res: Response) =
         throw new AppError('Title is required', 400);
     }
 
-    const existingTask = await prisma.projectTask.findFirst({
+    const existingTaskCount = await prisma.projectTask.count({
         where: { projectId, title }
     });
-    if (existingTask) {
-        throw new AppError('A task with this title already exists in the project', 400);
+    if (existingTaskCount >= 2) {
+        throw new AppError('This task has already been added twice to this project', 400);
     }
 
 
@@ -1155,6 +1155,61 @@ export const deleteProjectTask = asyncHandler(async (req: Request, res: Response
         message: 'Task deleted successfully'
     });
 });
+
+/**
+ * Review Project Task (Admin)
+ */
+export const reviewTask = asyncHandler(async (req: Request, res: Response) => {
+    const taskId = req.params.id as string;
+    const { feedback, status } = req.body;
+
+    if (!['DONE', 'DO_AGAIN', 'CANCELLED'].includes(status)) {
+        throw new AppError('Invalid status for review. Use DONE, DO_AGAIN, or CANCELLED', 400);
+    }
+
+    const task = await prisma.projectTask.findUnique({
+        where: { id: taskId },
+        include: { project: true }
+    });
+
+    if (!task) throw new AppError('Task not found', 404);
+
+    const updatedTask = await prisma.projectTask.update({
+        where: { id: taskId },
+        data: {
+            adminFeedback: feedback,
+            status,
+            reviewedAt: new Date()
+        }
+    });
+
+    // Notify Professionals
+    try {
+        const notifyUserIds = task.professionalIds;
+        if (notifyUserIds.length > 0) {
+            for (const userId of notifyUserIds) {
+                await prisma.notification.create({
+                    data: {
+                        userId,
+                        title: `Task Review: ${status}`,
+                        message: `Admin has reviewed your task: "${task.title}". Status: ${status}`,
+                        type: 'TASK',
+                        link: `/dashboard/professional/projects/${task.projectId}`
+                    }
+                });
+            }
+        }
+    } catch (err) {
+        console.error('[Review Task] Notification failed:', err);
+    }
+
+    res.status(200).json({
+        success: true,
+        message: `Task reviewed successfully as ${status}`,
+        data: updatedTask
+    });
+});
+
 
 /**
  * Add Localized Project Info

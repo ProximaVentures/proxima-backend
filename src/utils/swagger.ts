@@ -571,7 +571,7 @@ const swaggerDocument = {
                                 properties: {
                                     title: { type: 'string' },
                                     description: { type: 'string' },
-                                    status: { type: 'string', enum: ['TODO', 'IN_PROGRESS', 'COMPLETED'] },
+                                    status: { type: 'string', enum: ['TODO', 'IN_PROGRESS', 'IN_REVIEW', 'DONE', 'DO_AGAIN', 'CANCELLED'] },
                                     priority: { type: 'string', enum: ['LOW', 'MEDIUM', 'HIGH', 'URGENT'] },
                                     dueDate: { type: 'string', format: 'date-time' },
                                     professionalIds: { type: 'array', items: { type: 'string' } }
@@ -582,6 +582,55 @@ const swaggerDocument = {
                     }
                 },
                 responses: { 201: { description: 'Task assigned' }, 404: { description: 'Project not found' } }
+            }
+        },
+        '/api/admin/tasks/{id}/review': {
+            patch: {
+                summary: 'Review Project Task (Admin)',
+                tags: ['Admin Workspace'],
+                security: [{ bearerAuth: [] }],
+                parameters: [{ in: 'path', name: 'id', required: true, schema: { type: 'string' }, description: 'Task ID' }],
+                requestBody: {
+                    required: true,
+                    content: {
+                        'application/json': {
+                            schema: {
+                                type: 'object',
+                                properties: {
+                                    feedback: { type: 'string' },
+                                    status: { type: 'string', enum: ['DONE', 'DO_AGAIN', 'CANCELLED'] }
+                                },
+                                required: ['status']
+                            }
+                        }
+                    }
+                },
+                responses: { 200: { description: 'Task reviewed' }, 404: { description: 'Task not found' } }
+            }
+        },
+        '/api/professional/tasks/{id}/report': {
+            post: {
+                summary: 'Report Project Task (Professional)',
+                tags: ['Professional Workspace'],
+                security: [{ bearerAuth: [] }],
+                parameters: [{ in: 'path', name: 'id', required: true, schema: { type: 'string' }, description: 'Task ID' }],
+                requestBody: {
+                    required: true,
+                    content: {
+                        'application/json': {
+                            schema: {
+                                type: 'object',
+                                properties: {
+                                    content: { type: 'string' },
+                                    media: { type: 'array', items: { type: 'string' }, description: 'Links to images/videos' },
+                                    links: { type: 'array', items: { type: 'string' }, description: 'External links' }
+                                },
+                                required: ['content']
+                            }
+                        }
+                    }
+                },
+                responses: { 200: { description: 'Task reported' }, 404: { description: 'Task not found' } }
             }
         },
         '/api/admin/projects/{id}/tasks': {

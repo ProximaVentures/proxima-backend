@@ -228,10 +228,21 @@ model ProjectTask {
   project     Project  @relation(fields: [projectId], references: [id], onDelete: Cascade)
   title       String
   description String?  @db.Text
-  status      String   @default("TODO") // TODO, IN_PROGRESS, COMPLETED
+  status      String   @default("TODO") // TODO, IN_PROGRESS, IN_REVIEW, DONE, DO_AGAIN, CANCELLED
   priority    String   @default("MEDIUM") // LOW, MEDIUM, HIGH, URGENT
   dueDate     DateTime?
   professionalIds String[] // Targeted/Assigned professional IDs
+  
+  // Reporting fields (Professional)
+  reportContent String?   @db.Text
+  reportMedia   String[]  // Links to images/videos
+  reportLinks   String[]  // External links
+  reportedAt    DateTime?
+  
+  // Review fields (Admin)
+  adminFeedback String?   @db.Text
+  reviewedAt    DateTime?
+  
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 }
