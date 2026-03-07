@@ -14,9 +14,9 @@ export const reportTask = asyncHandler(async (req: AuthRequest, res: Response) =
     if (!userId) throw new AppError('Unauthorized', 401);
 
     const task = await prisma.projectTask.findUnique({
-        where: { id: taskId },
+        where: { id: taskId as string },
         include: { project: true }
-    });
+    }) as any;
 
     if (!task) throw new AppError('Task not found', 404);
 
@@ -32,7 +32,7 @@ export const reportTask = asyncHandler(async (req: AuthRequest, res: Response) =
     }
 
     const updatedTask = await prisma.projectTask.update({
-        where: { id: taskId },
+        where: { id: taskId as string },
         data: {
             reportContent: content,
             reportMedia: media || [],
