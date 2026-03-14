@@ -14,6 +14,7 @@ export default {
       },
     ],
   },
+  testPathIgnorePatterns: ['/node_modules/', '/dist/'],
   verbose: true,
   setupFiles: ['dotenv/config'],
   setupFilesAfterEnv: ['<rootDir>/src/tests/setup.ts'],
