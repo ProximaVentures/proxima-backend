@@ -64,4 +64,15 @@ router.post(
     projectController.expressInterest
 );
 
+// Delete projects
+router.delete(
+    '/:id',
+    projectController.deleteProject
+);
+
+router.delete(
+    '/pitches/:id',
+    projectController.deleteInvestmentPitch
+);
+
 export default router;

@@ -52,6 +52,16 @@ export const createProject = asyncHandler(async (req: AuthRequest, res: Response
     const userId = req.user?.id;
     if (!userId) throw new AppError('Unauthorized', 401);
 
+    // Check project limit (max 3)
+    const [projectCount, pitchCount] = await Promise.all([
+        prisma.project.count({ where: { clientId: userId } }),
+        prisma.investmentPitch.count({ where: { clientId: userId } }),
+    ]);
+
+    if (projectCount + pitchCount >= 3) {
+        throw new AppError('You have reached the maximum limit of 3 projects. Please contact support or delete an existing pending project to submit a new one.', 400);
+    }
+
     const data = req.body as ProjectInput;
 
     const project = await prisma.project.create({
@@ -76,6 +86,16 @@ export const createProject = asyncHandler(async (req: AuthRequest, res: Response
 export const createInvestmentPitch = asyncHandler(async (req: AuthRequest, res: Response) => {
     const userId = req.user?.id;
     if (!userId) throw new AppError('Unauthorized', 401);
+
+    // Check project limit (max 3)
+    const [projectCount, pitchCount] = await Promise.all([
+        prisma.project.count({ where: { clientId: userId } }),
+        prisma.investmentPitch.count({ where: { clientId: userId } }),
+    ]);
+
+    if (projectCount + pitchCount >= 3) {
+        throw new AppError('You have reached the maximum limit of 3 projects. Please contact support or delete an existing pending project to submit a new one.', 400);
+    }
 
     const data = req.body as InvestmentPitchInput;
 
@@ -494,5 +514,78 @@ export const checkTitleAvailability = asyncHandler(async (req: AuthRequest, res:
     res.status(200).json({
         success: true,
         available: !project,
+    });
+});
+/**
+ * Delete Standard Project
+ */
+export const deleteProject = asyncHandler(async (req: AuthRequest, res: Response) => {
+    const userId = req.user?.id;
+    const projectId = req.params.id as string;
+
+    if (!userId) throw new AppError('Unauthorized', 401);
+
+    // Check ownership
+    const existingProject = await prisma.project.findUnique({
+        where: { id: projectId },
+    });
+
+    if (!existingProject) {
+        throw new AppError('Project not found', 404);
+    }
+
+    if (existingProject.clientId !== userId) {
+        throw new AppError('You are not authorized to delete this project', 403);
+    }
+
+    // Only allow deletion if status is PENDING
+    if (existingProject.status !== 'PENDING') {
+        throw new AppError('Only pending projects can be deleted', 400);
+    }
+
+    await prisma.project.delete({
+        where: { id: projectId },
+    });
+
+    res.status(200).json({
+        success: true,
+        message: 'Project deleted successfully!',
+    });
+});
+
+/**
+ * Delete Investment Pitch
+ */
+export const deleteInvestmentPitch = asyncHandler(async (req: AuthRequest, res: Response) => {
+    const userId = req.user?.id;
+    const pitchId = req.params.id as string;
+
+    if (!userId) throw new AppError('Unauthorized', 401);
+
+    // Check ownership
+    const existingPitch = await prisma.investmentPitch.findUnique({
+        where: { id: pitchId },
+    });
+
+    if (!existingPitch) {
+        throw new AppError('Pitch not found', 404);
+    }
+
+    if (existingPitch.clientId !== userId) {
+        throw new AppError('You are not authorized to delete this pitch', 403);
+    }
+
+    // Only allow deletion if status is PENDING
+    if (existingPitch.status !== 'PENDING') {
+        throw new AppError('Only pending pitches can be deleted', 400);
+    }
+
+    await prisma.investmentPitch.delete({
+        where: { id: pitchId },
+    });
+
+    res.status(200).json({
+        success: true,
+        message: 'Investment pitch deleted successfully!',
     });
 });
