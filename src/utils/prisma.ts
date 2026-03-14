@@ -1,3 +1,4 @@
+// Forced restart to pick up Prisma schema changes
 import 'dotenv/config';
 import { PrismaClient } from '@prisma/client';
 import { PrismaPg } from '@prisma/adapter-pg';

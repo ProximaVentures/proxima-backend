@@ -9,6 +9,8 @@ const router = Router();
 // All project routes require authentication
 router.use(protect);
 
+router.get('/check-title', projectController.checkTitleAvailability);
+
 router.post(
     '/',
     validate(projectSchema),

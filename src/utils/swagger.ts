@@ -220,6 +220,66 @@ const swaggerDocument = {
                 },
             },
         },
+        '/api/notifications': {
+            get: {
+                summary: 'Get User Notifications',
+                tags: ['Notifications'],
+                security: [{ bearerAuth: [] }],
+                responses: {
+                    200: { description: 'Notifications retrieved successfully' },
+                    401: { description: 'Unauthorized' }
+                }
+            }
+        },
+        '/api/notifications/{id}/read': {
+            patch: {
+                summary: 'Mark Notification as Read',
+                tags: ['Notifications'],
+                security: [{ bearerAuth: [] }],
+                parameters: [{ in: 'path', name: 'id', required: true, schema: { type: 'string' } }],
+                responses: {
+                    200: { description: 'Notification marked as read' },
+                    404: { description: 'Notification not found' }
+                }
+            }
+        },
+        '/api/notifications/read-all': {
+            patch: {
+                summary: 'Mark All Notifications as Read',
+                tags: ['Notifications'],
+                security: [{ bearerAuth: [] }],
+                responses: {
+                    200: { description: 'All notifications marked as read' }
+                }
+            }
+        },
+        '/api/contact': {
+            post: {
+                summary: 'Handle Contact Form Submissions',
+                tags: ['Contact'],
+                requestBody: {
+                    required: true,
+                    content: {
+                        'application/json': {
+                            schema: {
+                                type: 'object',
+                                required: ['name', 'email', 'subject', 'message'],
+                                properties: {
+                                    name: { type: 'string' },
+                                    email: { type: 'string', format: 'email' },
+                                    subject: { type: 'string' },
+                                    message: { type: 'string' }
+                                }
+                            }
+                        }
+                    }
+                },
+                responses: {
+                    200: { description: 'Inquiry received' },
+                    400: { description: 'Validation error' }
+                }
+            }
+        },
         '/api/profile/me': {
             get: {
                 summary: 'Get Current User Profile',
@@ -260,8 +320,9 @@ const swaggerDocument = {
                                     industry: { type: 'array', items: { type: 'string' } },
                                     requirements: { type: 'string' },
                                     specificNotes: { type: 'string' },
-                                    budgetRange: { type: 'string', enum: ["<5k", "5k-10k", "10k-25k", "25k-50k", "50k+"] },
-                                    timeline: { type: 'string', enum: ["<1_month", "1-3_months", "3-6_months", "6_months+"] }
+                                    budgetRange: { type: 'string', enum: ["FROM_5K_TO_10K", "FROM_10K_TO_25K", "FROM_25K_TO_50K", "ABOVE_50K", "LESS_THAN_5K"] },
+                                    timeline: { type: 'string', enum: ["LESS_THAN_1_MONTH", "FROM_1_TO_3_MONTHS", "FROM_3_TO_6_MONTHS", "ABOVE_6_MONTHS"] },
+                                    coverImageUrl: { type: 'string', format: 'url' }
                                 },
                                 required: ['title', 'description', 'targetAudience', 'industry', 'requirements', 'budgetRange', 'timeline']
                             }
@@ -271,6 +332,82 @@ const swaggerDocument = {
                 responses: {
                     201: { description: 'Project created successfully' },
                     401: { description: 'Unauthorized' }
+                }
+            }
+        },
+        '/api/projects/{id}': {
+            get: {
+                summary: 'Get Project Details',
+                tags: ['Projects'],
+                security: [{ bearerAuth: [] }],
+                parameters: [{ in: 'path', name: 'id', required: true, schema: { type: 'string' } }],
+                responses: {
+                    200: { description: 'Project details retrieved' },
+                    404: { description: 'Project not found' }
+                }
+            },
+            patch: {
+                summary: 'Update a Standard Project',
+                tags: ['Projects'],
+                security: [{ bearerAuth: [] }],
+                parameters: [{ in: 'path', name: 'id', required: true, schema: { type: 'string' } }],
+                requestBody: {
+                    required: true,
+                    content: {
+                        'application/json': {
+                            schema: {
+                                type: 'object',
+                                properties: {
+                                    title: { type: 'string' },
+                                    description: { type: 'string' },
+                                    targetAudience: { type: 'string' },
+                                    industry: { type: 'array', items: { type: 'string' } },
+                                    requirements: { type: 'string' },
+                                    specificNotes: { type: 'string' },
+                                    budgetRange: { type: 'string' },
+                                    timeline: { type: 'string' },
+                                    coverImageUrl: { type: 'string', format: 'url' }
+                                }
+                            }
+                        }
+                    }
+                },
+                responses: {
+                    200: { description: 'Project updated successfully' },
+                    401: { description: 'Unauthorized' }
+                }
+            }
+        },
+        '/api/projects/check-title': {
+            get: {
+                summary: 'Check Project Title Availability',
+                tags: ['Projects'],
+                parameters: [{ in: 'query', name: 'title', required: true, schema: { type: 'string' } }],
+                responses: {
+                    200: { description: 'Availability status returned' }
+                }
+            }
+        },
+        '/api/projects/my-missions': {
+            get: {
+                summary: 'Get My Missions (Professionals)',
+                tags: ['Projects'],
+                security: [{ bearerAuth: [] }],
+                responses: {
+                    200: { description: 'Missions retrieved successfully' },
+                    401: { description: 'Unauthorized' }
+                }
+            }
+        },
+        '/api/projects/{id}/interest': {
+            post: {
+                summary: 'Express Interest in a Project',
+                tags: ['Projects'],
+                security: [{ bearerAuth: [] }],
+                parameters: [{ in: 'path', name: 'id', required: true, schema: { type: 'string' } }],
+                responses: {
+                    200: { description: 'Interest expressed successfully' },
+                    400: { description: 'Already expressed interest or not vetted' }
                 }
             }
         },
@@ -738,6 +875,134 @@ const swaggerDocument = {
                     }
                 },
                 responses: { 201: { description: 'Update added' }, 404: { description: 'Project not found' } }
+            }
+        },
+        '/api/admin/projects/{id}/interests': {
+            get: {
+                summary: 'Get Project Interests',
+                tags: ['Admin Workspace'],
+                security: [{ bearerAuth: [] }],
+                parameters: [{ in: 'path', name: 'id', required: true, schema: { type: 'string' } }],
+                responses: {
+                    200: { description: 'Project interests retrieved' }
+                }
+            }
+        },
+        '/api/admin/interests': {
+            get: {
+                summary: 'List All Expressed Interests',
+                tags: ['Admin Workspace'],
+                security: [{ bearerAuth: [] }],
+                responses: {
+                    200: { description: 'Interests retrieved' }
+                }
+            }
+        },
+        '/api/admin/interests/{id}': {
+            delete: {
+                summary: 'Delete an Interest',
+                tags: ['Admin Workspace'],
+                security: [{ bearerAuth: [] }],
+                parameters: [{ in: 'path', name: 'id', required: true, schema: { type: 'string' } }],
+                responses: {
+                    200: { description: 'Interest deleted' }
+                }
+            }
+        },
+        '/api/admin/resources/{id}': {
+            put: {
+                summary: 'Update a Resource',
+                tags: ['Admin Workspace'],
+                security: [{ bearerAuth: [] }],
+                parameters: [{ in: 'path', name: 'id', required: true, schema: { type: 'string' } }],
+                responses: { 200: { description: 'Resource updated' } }
+            },
+            delete: {
+                summary: 'Delete a Resource',
+                tags: ['Admin Workspace'],
+                security: [{ bearerAuth: [] }],
+                parameters: [{ in: 'path', name: 'id', required: true, schema: { type: 'string' } }],
+                responses: { 200: { description: 'Resource deleted' } }
+            }
+        },
+        '/api/admin/updates/{id}': {
+            put: {
+                summary: 'Update Project Update',
+                tags: ['Admin Workspace'],
+                security: [{ bearerAuth: [] }],
+                parameters: [{ in: 'path', name: 'id', required: true, schema: { type: 'string' } }],
+                responses: { 200: { description: 'Update modified' } }
+            },
+            delete: {
+                summary: 'Delete Project Update',
+                tags: ['Admin Workspace'],
+                security: [{ bearerAuth: [] }],
+                parameters: [{ in: 'path', name: 'id', required: true, schema: { type: 'string' } }],
+                responses: { 200: { description: 'Update deleted' } }
+            }
+        },
+        '/api/admin/meeting/{id}': {
+            put: {
+                summary: 'Update a Meeting',
+                tags: ['Admin Workspace'],
+                security: [{ bearerAuth: [] }],
+                parameters: [{ in: 'path', name: 'id', required: true, schema: { type: 'string' } }],
+                responses: { 200: { description: 'Meeting updated' } }
+            },
+            delete: {
+                summary: 'Delete a Meeting',
+                tags: ['Admin Workspace'],
+                security: [{ bearerAuth: [] }],
+                parameters: [{ in: 'path', name: 'id', required: true, schema: { type: 'string' } }],
+                responses: { 200: { description: 'Meeting deleted' } }
+            }
+        },
+        '/api/admin/document/{id}': {
+            put: {
+                summary: 'Update a Document',
+                tags: ['Admin Workspace'],
+                security: [{ bearerAuth: [] }],
+                parameters: [{ in: 'path', name: 'id', required: true, schema: { type: 'string' } }],
+                responses: { 200: { description: 'Document updated' } }
+            },
+            delete: {
+                summary: 'Delete a Document',
+                tags: ['Admin Workspace'],
+                security: [{ bearerAuth: [] }],
+                parameters: [{ in: 'path', name: 'id', required: true, schema: { type: 'string' } }],
+                responses: { 200: { description: 'Document deleted' } }
+            }
+        },
+        '/api/admin/task/{id}': {
+            put: {
+                summary: 'Update a Task',
+                tags: ['Admin Workspace'],
+                security: [{ bearerAuth: [] }],
+                parameters: [{ in: 'path', name: 'id', required: true, schema: { type: 'string' } }],
+                responses: { 200: { description: 'Task updated' } }
+            },
+            delete: {
+                summary: 'Delete a Task',
+                tags: ['Admin Workspace'],
+                security: [{ bearerAuth: [] }],
+                parameters: [{ in: 'path', name: 'id', required: true, schema: { type: 'string' } }],
+                responses: { 200: { description: 'Task deleted' } }
+            }
+        },
+        '/api/admin/info/{id}': {
+            put: {
+                summary: 'Update Project Info',
+                tags: ['Admin Workspace'],
+                security: [{ bearerAuth: [] }],
+                parameters: [{ in: 'path', name: 'id', required: true, schema: { type: 'string' } }],
+                responses: { 200: { description: 'Info updated' } }
+            },
+            delete: {
+                summary: 'Delete Project Info',
+                tags: ['Admin Workspace'],
+                security: [{ bearerAuth: [] }],
+                parameters: [{ in: 'path', name: 'id', required: true, schema: { type: 'string' } }],
+                responses: { 200: { description: 'Info deleted' } }
             }
         }
     },

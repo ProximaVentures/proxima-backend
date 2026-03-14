@@ -129,6 +129,7 @@ model Project {
   specificNotes  String?       @db.Text
   budgetRange    BudgetTier
   timeline       TimelineTier
+  coverImageUrl  String?
   status         ProjectStatus @default(PENDING)
   clientId       String
   client         User          @relation(fields: [clientId], references: [id], onDelete: Cascade)

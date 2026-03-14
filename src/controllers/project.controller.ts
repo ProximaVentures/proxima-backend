@@ -472,3 +472,27 @@ export const getMyMissions = asyncHandler(async (req: AuthRequest, res: Response
         }))
     });
 });
+/**
+ * Check if a project title is already taken
+ */
+export const checkTitleAvailability = asyncHandler(async (req: AuthRequest, res: Response) => {
+    const title = req.query.title as string;
+
+    if (!title) {
+        throw new AppError('Title query parameter is required', 400);
+    }
+
+    const project = await prisma.project.findFirst({
+        where: {
+            title: {
+                equals: title,
+                mode: 'insensitive', // Case-insensitive check
+            },
+        },
+    });
+
+    res.status(200).json({
+        success: true,
+        available: !project,
+    });
+});
