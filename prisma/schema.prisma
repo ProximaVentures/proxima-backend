@@ -70,6 +70,47 @@ enum TimelineTier {
   ABOVE_6_MONTHS
 }
 
+// ────────── NEW ENUMS for Client Dashboard ──────────
+
+enum SprintStatus {
+  PLANNED
+  ACTIVE
+  IN_REVIEW
+  APPROVED
+  COMPLETED
+  ON_HOLD
+}
+
+enum DeliverableType {
+  PDF_DOCUMENT
+  GITHUB_REPOSITORY
+  FIGMA_FILE
+  IMAGE
+  VIDEO
+  OTHER
+}
+
+enum DeliverableStatus {
+  PENDING
+  SUBMITTED
+  APPROVED
+  REJECTED
+}
+
+enum PaymentStatus {
+  UNPAID
+  PARTIAL
+  PAID
+  REFUNDED
+}
+
+enum ReviewAction {
+  APPROVED
+  CHANGES_REQUESTED
+}
+
+// ────────────────── MODELS ──────────────────
+
 model User {
   id            String    @id @default(cuid())
   email         String    @unique
@@ -88,6 +129,9 @@ model User {
   pitches       InvestmentPitch[]
   assignments   ProjectAssignment[]
   notifications Notification[]
+
+  // Project Manager relation
+  managedProjects Project[] @relation("managedProjects")
 }
 
 model Profile {
@@ -145,6 +189,15 @@ model Project {
   projectInfo    ProjectInfo[]
   tasks          ProjectTask[]
   sprints        ProjectSprint[]
+
+  // ── NEW: Client Dashboard fields ──
+  totalBudget       Float      @default(0)       // Total project budget in actual amount
+  budgetUsed        Float      @default(0)       // How much has been spent
+  versionLabel      String?                      // e.g., "MVP (v0.1)"
+  projectManagerId  String?
+  projectManager    User?      @relation("managedProjects", fields: [projectManagerId], references: [id], onDelete: SetNull)
+  timelineStart     DateTime?                    // Actual project start date
+  timelineEnd       DateTime?                    // Actual project end date
 }
 
 model ProjectAssignment {
@@ -259,26 +312,107 @@ model ProjectTask {
   richText      String?      @db.Text
 }
 
+// ────────── UPDATED: ProjectSprint ──────────
+
 model ProjectSprint {
   id              String        @id @default(cuid())
   projectId       String
   project         Project       @relation(fields: [projectId], references: [id], onDelete: Cascade)
   title           String
   description     String?       @db.Text
-  deliverables    String?       @db.Text
+  deliverables    String?       @db.Text   // Legacy text-based deliverables
   startDate       DateTime?
   dueDate         DateTime?
   projectWeight   Float         @default(0) // weight of sprint in the project (0-100)
   progress        Float         @default(0) // completion progress (0-100)
-  status          String        @default("PLANNED") // PLANNED, ACTIVE, COMPLETED, ON_HOLD
   assets          String[]
   createdAt       DateTime      @default(now())
   updatedAt       DateTime      @updatedAt
-
   tasks           ProjectTask[]
   duration        String?
   richText        String?       @db.Text
+
+  // ── NEW: Client Dashboard fields ──
+  sprintNumber    Int           @default(0)        // Sprint 1, Sprint 2, etc.
+  order           Int           @default(0)        // Display order
+  status          SprintStatus  @default(PLANNED)  // Replaces old string status
+  budget          Float         @default(0)        // Budget allocated to this sprint
+
+  // New relations
+  objectives      SprintObjective[]
+  sprintDeliverables SprintDeliverable[]
+  payment         SprintPayment?
+  reviews         SprintReview[]
+  comments        SprintComment[]
 }
+
+// ────────── NEW MODELS for Client Dashboard ──────────
+
+model SprintObjective {
+  id           String        @id @default(cuid())
+  sprintId     String
+  sprint       ProjectSprint @relation(fields: [sprintId], references: [id], onDelete: Cascade)
+  title        String
+  description  String?       @db.Text
+  isCompleted  Boolean       @default(false)
+  order        Int           @default(0)
+  createdAt    DateTime      @default(now())
+  updatedAt    DateTime      @updatedAt
+}
+
+model SprintDeliverable {
+  id           String            @id @default(cuid())
+  sprintId     String
+  sprint       ProjectSprint     @relation(fields: [sprintId], references: [id], onDelete: Cascade)
+  title        String
+  description  String?           @db.Text
+  type         DeliverableType   @default(OTHER)
+  fileUrl      String?
+  fileName     String?
+  fileSize     String?           // e.g., "2.4 MB"
+  commitCount  Int?              // For GitHub repositories
+  status       DeliverableStatus @default(PENDING)
+  submittedAt  DateTime?
+  reviewedAt   DateTime?
+  createdAt    DateTime          @default(now())
+  updatedAt    DateTime          @updatedAt
+}
+
+model SprintPayment {
+  id              String        @id @default(cuid())
+  sprintId        String        @unique
+  sprint          ProjectSprint @relation(fields: [sprintId], references: [id], onDelete: Cascade)
+  totalAmount     Float
+  amountPaid      Float         @default(0)
+  status          PaymentStatus @default(UNPAID)
+  transactionRef  String?
+  receiptUrl      String?
+  paidAt          DateTime?
+  createdAt       DateTime      @default(now())
+  updatedAt       DateTime      @updatedAt
+}
+
+model SprintReview {
+  id           String        @id @default(cuid())
+  sprintId     String
+  sprint       ProjectSprint @relation(fields: [sprintId], references: [id], onDelete: Cascade)
+  reviewerId   String        // The user (client) who reviewed
+  action       ReviewAction  // APPROVED or CHANGES_REQUESTED
+  comment      String?       @db.Text
+  createdAt    DateTime      @default(now())
+}
+
+model SprintComment {
+  id           String        @id @default(cuid())
+  sprintId     String
+  sprint       ProjectSprint @relation(fields: [sprintId], references: [id], onDelete: Cascade)
+  authorId     String        // User who posted
+  content      String        @db.Text
+  createdAt    DateTime      @default(now())
+  updatedAt    DateTime      @updatedAt
+}
+
+// ────────────────── EXISTING MODELS (unchanged) ──────────────────
 
 model InvestmentPitch {
   id                String      @id @default(cuid())

@@ -12,8 +12,8 @@ const swaggerDocument = {
     openapi: '3.0.0',
     info: {
         title: 'ProVen API Docs',
-        version: '1.0.0',
-        description: 'API Documentation for ProVen Vetting System',
+        version: '2.0.0',
+        description: 'API Documentation for ProVen Vetting System — includes Client Dashboard & Sprint Management endpoints',
     },
     servers: [
         {
@@ -1007,19 +1007,28 @@ const swaggerDocument = {
                 responses: { 200: { description: 'Info deleted' } }
             }
         },
+        // ════════════════════════════════════════════════════════
+        //  SPRINTS — Enhanced (GET all sprints with objectives/deliverables/payment)
+        // ════════════════════════════════════════════════════════
         '/api/projects/{projectId}/sprints': {
             get: {
-                summary: 'Get Project Sprints',
+                summary: 'Get Project Sprints (Enhanced)',
+                description: 'Returns all sprints for a project including objectives, deliverables, payment info, and tasks.',
                 tags: ['Sprints'],
                 security: [{ bearerAuth: [] }],
                 parameters: [{ in: 'path', name: 'projectId', required: true, schema: { type: 'string' } }],
-                responses: { 200: { description: 'Project sprints retrieved' } }
+                responses: { 200: { description: 'Project sprints with sub-resources retrieved' } }
             }
         },
-        '/api/admin/projects/{projectId}/sprint': {
+
+        // ════════════════════════════════════════════════════════
+        //  ADMIN — Sprint CRUD
+        // ════════════════════════════════════════════════════════
+        '/api/admin/projects/{projectId}/sprints': {
             post: {
-                summary: 'Create Project Sprint (Admin)',
-                tags: ['Admin Sprints'],
+                summary: 'Create Sprint (Admin)',
+                description: 'Creates a new sprint with optional objectives, auto-computes sprintNumber and order.',
+                tags: ['Admin Sprint Management'],
                 security: [{ bearerAuth: [] }],
                 parameters: [{ in: 'path', name: 'projectId', required: true, schema: { type: 'string' } }],
                 requestBody: {
@@ -1032,24 +1041,43 @@ const swaggerDocument = {
                                     title: { type: 'string' },
                                     description: { type: 'string' },
                                     deliverables: { type: 'string' },
+                                    startDate: { type: 'string', format: 'date-time' },
+                                    dueDate: { type: 'string', format: 'date-time' },
                                     projectWeight: { type: 'number', description: '0-100 percentage' },
                                     progress: { type: 'number', description: '0-100 percentage' },
-                                    status: { type: 'string', enum: ['PLANNED', 'ACTIVE', 'COMPLETED', 'ON_HOLD'] },
-                                    duration: { type: 'string', example: '1 month' },
-                                    richText: { type: 'string', description: 'HTML or JSON rich text data' }
+                                    status: { type: 'string', enum: ['PLANNED', 'ACTIVE', 'IN_REVIEW', 'APPROVED', 'COMPLETED', 'ON_HOLD'] },
+                                    duration: { type: 'string', example: '2 weeks' },
+                                    richText: { type: 'string', description: 'HTML or JSON rich text' },
+                                    sprintNumber: { type: 'integer', description: 'Auto-computed if omitted' },
+                                    order: { type: 'integer', description: 'Auto-computed if omitted' },
+                                    budget: { type: 'number', description: 'Sprint budget in dollars' },
+                                    objectives: {
+                                        type: 'array',
+                                        items: {
+                                            type: 'object',
+                                            properties: {
+                                                title: { type: 'string' },
+                                                description: { type: 'string' },
+                                                isCompleted: { type: 'boolean' },
+                                                order: { type: 'integer' }
+                                            },
+                                            required: ['title']
+                                        }
+                                    }
                                 },
                                 required: ['title']
                             }
                         }
                     }
                 },
-                responses: { 201: { description: 'Sprint created' }, 404: { description: 'Project not found' } }
+                responses: { 201: { description: 'Sprint created with objectives' }, 404: { description: 'Project not found' } }
             }
         },
-        '/api/admin/sprint/{id}': {
+        '/api/admin/sprints/{id}': {
             put: {
                 summary: 'Update Sprint (Admin)',
-                tags: ['Admin Sprints'],
+                description: 'Updates sprint fields. Only provided fields are updated.',
+                tags: ['Admin Sprint Management'],
                 security: [{ bearerAuth: [] }],
                 parameters: [{ in: 'path', name: 'id', required: true, schema: { type: 'string' } }],
                 requestBody: {
@@ -1062,24 +1090,469 @@ const swaggerDocument = {
                                     title: { type: 'string' },
                                     description: { type: 'string' },
                                     deliverables: { type: 'string' },
+                                    startDate: { type: 'string', format: 'date-time' },
+                                    dueDate: { type: 'string', format: 'date-time' },
                                     projectWeight: { type: 'number' },
                                     progress: { type: 'number' },
-                                    status: { type: 'string', enum: ['PLANNED', 'ACTIVE', 'COMPLETED', 'ON_HOLD'] },
+                                    status: { type: 'string', enum: ['PLANNED', 'ACTIVE', 'IN_REVIEW', 'APPROVED', 'COMPLETED', 'ON_HOLD'] },
                                     duration: { type: 'string' },
-                                    richText: { type: 'string' }
+                                    richText: { type: 'string' },
+                                    sprintNumber: { type: 'integer' },
+                                    order: { type: 'integer' },
+                                    budget: { type: 'number' }
                                 }
                             }
                         }
                     }
                 },
-                responses: { 200: { description: 'Sprint updated' } }
+                responses: { 200: { description: 'Sprint updated' }, 404: { description: 'Sprint not found' } }
             },
             delete: {
                 summary: 'Delete Sprint (Admin)',
-                tags: ['Admin Sprints'],
+                tags: ['Admin Sprint Management'],
                 security: [{ bearerAuth: [] }],
                 parameters: [{ in: 'path', name: 'id', required: true, schema: { type: 'string' } }],
-                responses: { 200: { description: 'Sprint deleted' } }
+                responses: { 200: { description: 'Sprint deleted' }, 404: { description: 'Sprint not found' } }
+            }
+        },
+
+        // ════════════════════════════════════════════════════════
+        //  ADMIN — Sprint Objectives
+        // ════════════════════════════════════════════════════════
+        '/api/admin/sprints/{id}/objectives': {
+            post: {
+                summary: 'Add Objective to Sprint (Admin)',
+                description: 'Creates a new objective/checklist item for a sprint.',
+                tags: ['Admin Sprint Management'],
+                security: [{ bearerAuth: [] }],
+                parameters: [{ in: 'path', name: 'id', required: true, schema: { type: 'string' }, description: 'Sprint ID' }],
+                requestBody: {
+                    required: true,
+                    content: {
+                        'application/json': {
+                            schema: {
+                                type: 'object',
+                                properties: {
+                                    title: { type: 'string' },
+                                    description: { type: 'string' },
+                                    isCompleted: { type: 'boolean', default: false },
+                                    order: { type: 'integer', description: 'Auto-computed if omitted' }
+                                },
+                                required: ['title']
+                            }
+                        }
+                    }
+                },
+                responses: { 201: { description: 'Objective added' }, 404: { description: 'Sprint not found' } }
+            }
+        },
+        '/api/admin/objectives/{id}': {
+            put: {
+                summary: 'Update Objective (Admin)',
+                tags: ['Admin Sprint Management'],
+                security: [{ bearerAuth: [] }],
+                parameters: [{ in: 'path', name: 'id', required: true, schema: { type: 'string' }, description: 'Objective ID' }],
+                requestBody: {
+                    required: true,
+                    content: {
+                        'application/json': {
+                            schema: {
+                                type: 'object',
+                                properties: {
+                                    title: { type: 'string' },
+                                    description: { type: 'string' },
+                                    isCompleted: { type: 'boolean' },
+                                    order: { type: 'integer' }
+                                }
+                            }
+                        }
+                    }
+                },
+                responses: { 200: { description: 'Objective updated' }, 404: { description: 'Objective not found' } }
+            },
+            delete: {
+                summary: 'Delete Objective (Admin)',
+                tags: ['Admin Sprint Management'],
+                security: [{ bearerAuth: [] }],
+                parameters: [{ in: 'path', name: 'id', required: true, schema: { type: 'string' }, description: 'Objective ID' }],
+                responses: { 200: { description: 'Objective deleted' }, 404: { description: 'Objective not found' } }
+            }
+        },
+        '/api/admin/objectives/{id}/toggle': {
+            patch: {
+                summary: 'Toggle Objective Completion (Admin)',
+                description: 'Toggles the isCompleted status of an objective.',
+                tags: ['Admin Sprint Management'],
+                security: [{ bearerAuth: [] }],
+                parameters: [{ in: 'path', name: 'id', required: true, schema: { type: 'string' }, description: 'Objective ID' }],
+                responses: { 200: { description: 'Objective toggled' }, 404: { description: 'Objective not found' } }
+            }
+        },
+
+        // ════════════════════════════════════════════════════════
+        //  ADMIN — Sprint Deliverables
+        // ════════════════════════════════════════════════════════
+        '/api/admin/sprints/{id}/deliverables': {
+            post: {
+                summary: 'Add Deliverable to Sprint (Admin)',
+                description: 'Creates a new deliverable (file, repo, document, etc.) for a sprint.',
+                tags: ['Admin Sprint Management'],
+                security: [{ bearerAuth: [] }],
+                parameters: [{ in: 'path', name: 'id', required: true, schema: { type: 'string' }, description: 'Sprint ID' }],
+                requestBody: {
+                    required: true,
+                    content: {
+                        'application/json': {
+                            schema: {
+                                type: 'object',
+                                properties: {
+                                    title: { type: 'string' },
+                                    description: { type: 'string' },
+                                    type: { type: 'string', enum: ['CODE_REPO', 'DESIGN_FILE', 'DOCUMENT', 'DEPLOYMENT', 'OTHER'] },
+                                    fileUrl: { type: 'string', format: 'url' },
+                                    fileName: { type: 'string' },
+                                    fileSize: { type: 'string' },
+                                    commitCount: { type: 'integer' },
+                                    status: { type: 'string', enum: ['PENDING', 'SUBMITTED', 'APPROVED', 'REJECTED'] }
+                                },
+                                required: ['title']
+                            }
+                        }
+                    }
+                },
+                responses: { 201: { description: 'Deliverable added' }, 404: { description: 'Sprint not found' } }
+            }
+        },
+        '/api/admin/deliverables/{id}': {
+            put: {
+                summary: 'Update Deliverable (Admin)',
+                tags: ['Admin Sprint Management'],
+                security: [{ bearerAuth: [] }],
+                parameters: [{ in: 'path', name: 'id', required: true, schema: { type: 'string' }, description: 'Deliverable ID' }],
+                requestBody: {
+                    required: true,
+                    content: {
+                        'application/json': {
+                            schema: {
+                                type: 'object',
+                                properties: {
+                                    title: { type: 'string' },
+                                    description: { type: 'string' },
+                                    type: { type: 'string', enum: ['CODE_REPO', 'DESIGN_FILE', 'DOCUMENT', 'DEPLOYMENT', 'OTHER'] },
+                                    fileUrl: { type: 'string' },
+                                    fileName: { type: 'string' },
+                                    fileSize: { type: 'string' },
+                                    commitCount: { type: 'integer' }
+                                }
+                            }
+                        }
+                    }
+                },
+                responses: { 200: { description: 'Deliverable updated' }, 404: { description: 'Deliverable not found' } }
+            },
+            delete: {
+                summary: 'Delete Deliverable (Admin)',
+                tags: ['Admin Sprint Management'],
+                security: [{ bearerAuth: [] }],
+                parameters: [{ in: 'path', name: 'id', required: true, schema: { type: 'string' }, description: 'Deliverable ID' }],
+                responses: { 200: { description: 'Deliverable deleted' }, 404: { description: 'Deliverable not found' } }
+            }
+        },
+        '/api/admin/deliverables/{id}/status': {
+            patch: {
+                summary: 'Update Deliverable Status (Admin)',
+                description: 'Updates the status of a deliverable and auto-sets timestamps.',
+                tags: ['Admin Sprint Management'],
+                security: [{ bearerAuth: [] }],
+                parameters: [{ in: 'path', name: 'id', required: true, schema: { type: 'string' }, description: 'Deliverable ID' }],
+                requestBody: {
+                    required: true,
+                    content: {
+                        'application/json': {
+                            schema: {
+                                type: 'object',
+                                properties: {
+                                    status: { type: 'string', enum: ['PENDING', 'SUBMITTED', 'APPROVED', 'REJECTED'] }
+                                },
+                                required: ['status']
+                            }
+                        }
+                    }
+                },
+                responses: { 200: { description: 'Deliverable status updated' }, 404: { description: 'Deliverable not found' } }
+            }
+        },
+
+        // ════════════════════════════════════════════════════════
+        //  ADMIN — Sprint Payment
+        // ════════════════════════════════════════════════════════
+        '/api/admin/sprints/{id}/payment': {
+            post: {
+                summary: 'Create/Update Sprint Payment (Admin)',
+                description: 'Creates or updates (upserts) the payment record for a sprint.',
+                tags: ['Admin Sprint Management'],
+                security: [{ bearerAuth: [] }],
+                parameters: [{ in: 'path', name: 'id', required: true, schema: { type: 'string' }, description: 'Sprint ID' }],
+                requestBody: {
+                    required: true,
+                    content: {
+                        'application/json': {
+                            schema: {
+                                type: 'object',
+                                properties: {
+                                    totalAmount: { type: 'number' },
+                                    amountPaid: { type: 'number', default: 0 },
+                                    status: { type: 'string', enum: ['UNPAID', 'PARTIAL', 'PAID', 'OVERDUE'] },
+                                    transactionRef: { type: 'string' },
+                                    receiptUrl: { type: 'string', format: 'url' }
+                                },
+                                required: ['totalAmount']
+                            }
+                        }
+                    }
+                },
+                responses: { 200: { description: 'Payment record created/updated' }, 404: { description: 'Sprint not found' } }
+            }
+        },
+        '/api/admin/payments/{id}': {
+            patch: {
+                summary: 'Update Payment Record (Admin)',
+                tags: ['Admin Sprint Management'],
+                security: [{ bearerAuth: [] }],
+                parameters: [{ in: 'path', name: 'id', required: true, schema: { type: 'string' }, description: 'Payment ID' }],
+                requestBody: {
+                    required: true,
+                    content: {
+                        'application/json': {
+                            schema: {
+                                type: 'object',
+                                properties: {
+                                    totalAmount: { type: 'number' },
+                                    amountPaid: { type: 'number' },
+                                    status: { type: 'string', enum: ['UNPAID', 'PARTIAL', 'PAID', 'OVERDUE'] },
+                                    transactionRef: { type: 'string' },
+                                    receiptUrl: { type: 'string', format: 'url' }
+                                }
+                            }
+                        }
+                    }
+                },
+                responses: { 200: { description: 'Payment updated' }, 404: { description: 'Payment not found' } }
+            }
+        },
+
+        // ════════════════════════════════════════════════════════
+        //  ADMIN — Project Budget & Dashboard Config
+        // ════════════════════════════════════════════════════════
+        '/api/admin/projects/{projectId}/budget': {
+            patch: {
+                summary: 'Update Project Budget & Dashboard Config (Admin)',
+                description: 'Updates project-level budget, version label, project manager, and timeline fields.',
+                tags: ['Admin Sprint Management'],
+                security: [{ bearerAuth: [] }],
+                parameters: [{ in: 'path', name: 'projectId', required: true, schema: { type: 'string' } }],
+                requestBody: {
+                    required: true,
+                    content: {
+                        'application/json': {
+                            schema: {
+                                type: 'object',
+                                properties: {
+                                    totalBudget: { type: 'number' },
+                                    budgetUsed: { type: 'number' },
+                                    versionLabel: { type: 'string', example: 'v1.0 MVP' },
+                                    projectManagerId: { type: 'string', description: 'User ID of the assigned PM' },
+                                    timelineStart: { type: 'string', format: 'date-time' },
+                                    timelineEnd: { type: 'string', format: 'date-time' }
+                                }
+                            }
+                        }
+                    }
+                },
+                responses: { 200: { description: 'Project budget/config updated' }, 404: { description: 'Project not found' } }
+            }
+        },
+
+        // ════════════════════════════════════════════════════════
+        //  ADMIN — Sprint Comments
+        // ════════════════════════════════════════════════════════
+        '/api/admin/sprints/{id}/comments': {
+            post: {
+                summary: 'Add Comment to Sprint (Admin)',
+                tags: ['Admin Sprint Management'],
+                security: [{ bearerAuth: [] }],
+                parameters: [{ in: 'path', name: 'id', required: true, schema: { type: 'string' }, description: 'Sprint ID' }],
+                requestBody: {
+                    required: true,
+                    content: {
+                        'application/json': {
+                            schema: {
+                                type: 'object',
+                                properties: {
+                                    content: { type: 'string' }
+                                },
+                                required: ['content']
+                            }
+                        }
+                    }
+                },
+                responses: { 201: { description: 'Comment added' }, 404: { description: 'Sprint not found' } }
+            }
+        },
+
+        // ════════════════════════════════════════════════════════
+        //  CLIENT DASHBOARD — Project Overview
+        // ════════════════════════════════════════════════════════
+        '/api/client/projects/{projectId}/dashboard': {
+            get: {
+                summary: 'Get Project Dashboard Overview (Client)',
+                description: 'Returns full project overview: header stats (title, progress, budget, timeline, PM, team), next milestone, and all sprints with summary data.',
+                tags: ['Client Dashboard'],
+                security: [{ bearerAuth: [] }],
+                parameters: [{ in: 'path', name: 'projectId', required: true, schema: { type: 'string' } }],
+                responses: {
+                    200: { description: 'Dashboard data with project stats, team, sprints, and next milestone' },
+                    403: { description: 'Unauthorized — not the project owner' },
+                    404: { description: 'Project not found' }
+                }
+            }
+        },
+
+        // ════════════════════════════════════════════════════════
+        //  CLIENT DASHBOARD — Sprint Board Detail
+        // ════════════════════════════════════════════════════════
+        '/api/client/projects/{projectId}/sprints/{sprintId}': {
+            get: {
+                summary: 'Get Sprint Board Detail (Client)',
+                description: 'Returns full sprint board: payment status, objectives checklist, deliverables, reviews, comments, and progress summary.',
+                tags: ['Client Dashboard'],
+                security: [{ bearerAuth: [] }],
+                parameters: [
+                    { in: 'path', name: 'projectId', required: true, schema: { type: 'string' } },
+                    { in: 'path', name: 'sprintId', required: true, schema: { type: 'string' } }
+                ],
+                responses: {
+                    200: { description: 'Sprint board data with payment, objectives, deliverables, reviews, comments, and progress summary' },
+                    403: { description: 'Unauthorized' },
+                    404: { description: 'Sprint or project not found' }
+                }
+            }
+        },
+
+        // ════════════════════════════════════════════════════════
+        //  CLIENT DASHBOARD — Sprint Actions
+        // ════════════════════════════════════════════════════════
+        '/api/client/sprints/{sprintId}/approve': {
+            post: {
+                summary: 'Approve Sprint (Client)',
+                description: 'Client approves a sprint. Creates a review record with APPROVED action and updates sprint status.',
+                tags: ['Client Dashboard'],
+                security: [{ bearerAuth: [] }],
+                parameters: [{ in: 'path', name: 'sprintId', required: true, schema: { type: 'string' } }],
+                requestBody: {
+                    content: {
+                        'application/json': {
+                            schema: {
+                                type: 'object',
+                                properties: {
+                                    comment: { type: 'string', description: 'Optional approval comment' }
+                                }
+                            }
+                        }
+                    }
+                },
+                responses: {
+                    200: { description: 'Sprint approved successfully' },
+                    400: { description: 'Sprint must be in review status' },
+                    403: { description: 'Only the project client can approve' }
+                }
+            }
+        },
+        '/api/client/sprints/{sprintId}/request-changes': {
+            post: {
+                summary: 'Request Changes on Sprint (Client)',
+                description: 'Client requests changes. Creates a review record with CHANGES_REQUESTED action and resets sprint status to ACTIVE.',
+                tags: ['Client Dashboard'],
+                security: [{ bearerAuth: [] }],
+                parameters: [{ in: 'path', name: 'sprintId', required: true, schema: { type: 'string' } }],
+                requestBody: {
+                    required: true,
+                    content: {
+                        'application/json': {
+                            schema: {
+                                type: 'object',
+                                properties: {
+                                    comment: { type: 'string', description: 'Explanation of requested changes' }
+                                },
+                                required: ['comment']
+                            }
+                        }
+                    }
+                },
+                responses: {
+                    200: { description: 'Changes requested successfully' },
+                    400: { description: 'Sprint must be in review status / comment required' },
+                    403: { description: 'Only the project client can request changes' }
+                }
+            }
+        },
+
+        // ════════════════════════════════════════════════════════
+        //  CLIENT DASHBOARD — Sprint Comments
+        // ════════════════════════════════════════════════════════
+        '/api/client/sprints/{sprintId}/comments': {
+            post: {
+                summary: 'Add Comment to Sprint (Client)',
+                tags: ['Client Dashboard'],
+                security: [{ bearerAuth: [] }],
+                parameters: [{ in: 'path', name: 'sprintId', required: true, schema: { type: 'string' } }],
+                requestBody: {
+                    required: true,
+                    content: {
+                        'application/json': {
+                            schema: {
+                                type: 'object',
+                                properties: {
+                                    content: { type: 'string' }
+                                },
+                                required: ['content']
+                            }
+                        }
+                    }
+                },
+                responses: {
+                    201: { description: 'Comment added' },
+                    403: { description: 'Unauthorized' }
+                }
+            },
+            get: {
+                summary: 'Get Sprint Comments (Client)',
+                description: 'Returns all comments for a sprint with resolved author info.',
+                tags: ['Client Dashboard'],
+                security: [{ bearerAuth: [] }],
+                parameters: [{ in: 'path', name: 'sprintId', required: true, schema: { type: 'string' } }],
+                responses: {
+                    200: { description: 'Comments with author info' },
+                    403: { description: 'Unauthorized' }
+                }
+            }
+        },
+
+        // ════════════════════════════════════════════════════════
+        //  CLIENT DASHBOARD — Project Progress
+        // ════════════════════════════════════════════════════════
+        '/api/client/projects/{projectId}/progress': {
+            get: {
+                summary: 'Get Computed Project Progress (Client/Admin/Professional)',
+                description: 'Returns computed progress stats: overall progress, sprint/objective/deliverable/task completion counts, and budget breakdown.',
+                tags: ['Client Dashboard'],
+                security: [{ bearerAuth: [] }],
+                parameters: [{ in: 'path', name: 'projectId', required: true, schema: { type: 'string' } }],
+                responses: {
+                    200: { description: 'Progress stats with breakdown by sprints, objectives, deliverables, tasks, and budget' },
+                    403: { description: 'Unauthorized' },
+                    404: { description: 'Project not found' }
+                }
             }
         }
     },

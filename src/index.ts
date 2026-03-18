@@ -14,6 +14,7 @@ import contactRoutes from './routes/contact.routes.js';
 import notificationRoutes from './routes/notification.routes.js';
 import professionalRoutes from './routes/professional.routes.js';
 import sprintRoutes from './routes/sprint.routes.js';
+import clientDashboardRoutes from './routes/client-dashboard.routes.js';
 import { setupSwagger } from './utils/swagger.js';
 
 const app = express();
@@ -122,6 +123,7 @@ app.use('/api/contact', contactRoutes);
 app.use('/api/notifications', notificationRoutes);
 app.use('/api/professional', professionalRoutes);
 app.use('/api', sprintRoutes);
+app.use('/api/client', clientDashboardRoutes);
 
 // SWAGGER DOCS - Setup before listen so it's available immediately
 setupSwagger(app);
