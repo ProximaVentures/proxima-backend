@@ -3,10 +3,6 @@ import { asyncHandler, AppError } from '../middleware/error.middleware.js';
 import type { AuthRequest } from '../interfaces/auth.interface.js';
 import prisma from '../utils/prisma.js';
 
-// Cast prisma to any to work with the new schema relations
-// before migration is fully applied. Remove after migration is successful.
-const db = prisma as any;
-
 // ═══════════════════════════════════════════════════════════
 //  CLIENT DASHBOARD CONTROLLER
 //  Powers the new client-facing project execution dashboard.
@@ -26,7 +22,7 @@ export const getProjectDashboard = asyncHandler(async (req: AuthRequest, res: Re
 
     if (!userId) throw new AppError('Unauthorized', 401);
 
-    const project = await db.project.findUnique({
+    const project = await prisma.project.findUnique({
         where: { id: projectId },
         include: {
             client: {
@@ -96,7 +92,7 @@ export const getProjectDashboard = asyncHandler(async (req: AuthRequest, res: Re
     }
 
     // ── Compute overall project progress from sprints ──
-    const sprints: any[] = project.sprints || [];
+    const sprints = project.sprints || [];
     const totalWeight = sprints.reduce((sum: number, s: any) => sum + s.projectWeight, 0);
     const weightedProgress = totalWeight > 0
         ? sprints.reduce((sum: number, s: any) => sum + (s.progress * s.projectWeight / 100), 0) / totalWeight * 100
@@ -222,7 +218,7 @@ export const getSprintBoard = asyncHandler(async (req: AuthRequest, res: Respons
     if (!userId) throw new AppError('Unauthorized', 401);
 
     // Verify project access
-    const project = await db.project.findUnique({
+    const project = await prisma.project.findUnique({
         where: { id: projectId },
         select: { clientId: true, id: true, title: true }
     });
@@ -235,7 +231,7 @@ export const getSprintBoard = asyncHandler(async (req: AuthRequest, res: Respons
         throw new AppError('Unauthorized', 403);
     }
 
-    const sprint = await db.projectSprint.findUnique({
+    const sprint = await prisma.projectSprint.findUnique({
         where: { id: sprintId },
         include: {
             objectives: { orderBy: { order: 'asc' } },
@@ -298,7 +294,7 @@ export const getSprintBoard = asyncHandler(async (req: AuthRequest, res: Respons
     ];
     const uniqueAuthorIds = [...new Set(authorIds)] as string[];
     const authors = uniqueAuthorIds.length > 0
-        ? await db.user.findMany({
+        ? await prisma.user.findMany({
             where: { id: { in: uniqueAuthorIds } },
             select: {
                 id: true,
@@ -396,7 +392,7 @@ export const approveSprint = asyncHandler(async (req: AuthRequest, res: Response
 
     if (!userId) throw new AppError('Unauthorized', 401);
 
-    const sprint = await db.projectSprint.findUnique({
+    const sprint = await prisma.projectSprint.findUnique({
         where: { id: sprintId },
         include: { project: true }
     });
@@ -415,8 +411,8 @@ export const approveSprint = asyncHandler(async (req: AuthRequest, res: Response
     }
 
     // Create review record and update sprint status in transaction
-    const [review, updatedSprint] = await db.$transaction([
-        db.sprintReview.create({
+    const [review, updatedSprint] = await prisma.$transaction([
+        prisma.sprintReview.create({
             data: {
                 sprintId,
                 reviewerId: userId,
@@ -424,7 +420,7 @@ export const approveSprint = asyncHandler(async (req: AuthRequest, res: Response
                 comment: comment || null,
             }
         }),
-        db.projectSprint.update({
+        prisma.projectSprint.update({
             where: { id: sprintId },
             data: {
                 status: 'APPROVED',
@@ -435,9 +431,9 @@ export const approveSprint = asyncHandler(async (req: AuthRequest, res: Response
 
     // Notify admin (non-blocking)
     try {
-        const admins = await db.user.findMany({ where: { role: 'ADMIN' } });
+        const admins = await prisma.user.findMany({ where: { role: 'ADMIN' } });
         for (const admin of admins as any[]) {
-            await db.notification.create({
+            await prisma.notification.create({
                 data: {
                     userId: admin.id,
                     title: '✅ Sprint Approved by Client',
@@ -472,7 +468,7 @@ export const requestSprintChanges = asyncHandler(async (req: AuthRequest, res: R
     if (!userId) throw new AppError('Unauthorized', 401);
     if (!comment) throw new AppError('A comment explaining the requested changes is required', 400);
 
-    const sprint = await db.projectSprint.findUnique({
+    const sprint = await prisma.projectSprint.findUnique({
         where: { id: sprintId },
         include: { project: true }
     });
@@ -490,8 +486,8 @@ export const requestSprintChanges = asyncHandler(async (req: AuthRequest, res: R
     }
 
     // Create review record and set sprint back to ACTIVE status
-    const [review, updatedSprint] = await db.$transaction([
-        db.sprintReview.create({
+    const [review, updatedSprint] = await prisma.$transaction([
+        prisma.sprintReview.create({
             data: {
                 sprintId,
                 reviewerId: userId,
@@ -499,7 +495,7 @@ export const requestSprintChanges = asyncHandler(async (req: AuthRequest, res: R
                 comment,
             }
         }),
-        db.projectSprint.update({
+        prisma.projectSprint.update({
             where: { id: sprintId },
             data: { status: 'ACTIVE' }
         })
@@ -507,9 +503,9 @@ export const requestSprintChanges = asyncHandler(async (req: AuthRequest, res: R
 
     // Notify admin (non-blocking)
     try {
-        const admins = await db.user.findMany({ where: { role: 'ADMIN' } });
+        const admins = await prisma.user.findMany({ where: { role: 'ADMIN' } });
         for (const admin of admins as any[]) {
-            await db.notification.create({
+            await prisma.notification.create({
                 data: {
                     userId: admin.id,
                     title: '⚠️ Changes Requested on Sprint',
@@ -544,7 +540,7 @@ export const addSprintComment = asyncHandler(async (req: AuthRequest, res: Respo
     if (!userId) throw new AppError('Unauthorized', 401);
     if (!content) throw new AppError('Comment content is required', 400);
 
-    const sprint = await db.projectSprint.findUnique({
+    const sprint = await prisma.projectSprint.findUnique({
         where: { id: sprintId },
         include: { project: true }
     });
@@ -558,7 +554,7 @@ export const addSprintComment = asyncHandler(async (req: AuthRequest, res: Respo
         throw new AppError('Unauthorized', 403);
     }
 
-    const comment = await db.sprintComment.create({
+    const comment = await prisma.sprintComment.create({
         data: {
             sprintId,
             authorId: userId,
@@ -584,7 +580,7 @@ export const getSprintComments = asyncHandler(async (req: AuthRequest, res: Resp
 
     if (!userId) throw new AppError('Unauthorized', 401);
 
-    const sprint = await db.projectSprint.findUnique({
+    const sprint = await prisma.projectSprint.findUnique({
         where: { id: sprintId },
         include: { project: { select: { clientId: true } } }
     });
@@ -597,7 +593,7 @@ export const getSprintComments = asyncHandler(async (req: AuthRequest, res: Resp
         throw new AppError('Unauthorized', 403);
     }
 
-    const comments = await db.sprintComment.findMany({
+    const comments = await prisma.sprintComment.findMany({
         where: { sprintId },
         orderBy: { createdAt: 'asc' },
     });
@@ -605,7 +601,7 @@ export const getSprintComments = asyncHandler(async (req: AuthRequest, res: Resp
     // Resolve authors
     const authorIds = [...new Set((comments as any[]).map((c: any) => c.authorId))] as string[];
     const authors = authorIds.length > 0
-        ? await db.user.findMany({
+        ? await prisma.user.findMany({
             where: { id: { in: authorIds } },
             select: {
                 id: true,
@@ -645,7 +641,7 @@ export const getProjectProgress = asyncHandler(async (req: AuthRequest, res: Res
 
     if (!userId) throw new AppError('Unauthorized', 401);
 
-    const project = await db.project.findUnique({
+    const project = await prisma.project.findUnique({
         where: { id: projectId },
         include: {
             sprints: {
