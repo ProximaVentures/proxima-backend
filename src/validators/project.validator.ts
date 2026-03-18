@@ -11,6 +11,8 @@ export const projectSchema = z.object({
     budgetRange: z.enum(["<5k", "5k-10k", "10k-25k", "25k-50k", "50k+"]),
     timeline: z.enum(["<1_month", "1-3_months", "3-6_months", "6_months+"]),
     coverImageUrl: z.string().url().optional(),
+    category: z.string().min(2, "Category is required"),
+    categoryData: z.record(z.string(), z.any()).optional(),
 });
 
 export const investmentPitchSchema = z.object({

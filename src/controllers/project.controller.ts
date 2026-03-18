@@ -70,6 +70,8 @@ export const createProject = asyncHandler(async (req: AuthRequest, res: Response
             budgetRange: mapBudget(data.budgetRange),
             timeline: mapTimeline(data.timeline),
             clientId: userId,
+            category: data.category,
+            categoryData: data.categoryData || {},
         }) as any,
     });
 
@@ -252,13 +254,18 @@ export const getAcceptedProjects = asyncHandler(async (req: AuthRequest, res: Re
                 select: {
                     id: true,
                     username: true,
-                    // Add other client fields if necessary
+                    profile: {
+                        select: {
+                            firstName: true,
+                            lastName: true,
+                            avatarUrl: true,
+                        }
+                    }
                 }
             },
             assignments: {
                 where: {
                     userId: req.user?.id || '',
-                    status: 'INTERESTED',
                 },
                 select: {
                     userId: true,
@@ -280,13 +287,20 @@ export const getAcceptedProjects = asyncHandler(async (req: AuthRequest, res: Re
         },
     });
 
+    // Map projects to include isAssigned and isInterested convenience flags
+    const mappedProjects = projects.map(project => ({
+        ...project,
+        isAssigned: project.assignments.some(a => ['ACTIVE', 'ACCEPTED', 'ASSIGNED'].includes(a.status)),
+        isInterested: project.assignments.some(a => a.status === 'INTERESTED'),
+    }));
+
     res.status(200).json({
         success: true,
         count: projects.length,
         total,
         page,
         totalPages: Math.ceil(total / limit),
-        data: projects,
+        data: mappedProjects,
     });
 });
 /**
@@ -364,7 +378,12 @@ export const getProjectById = asyncHandler(async (req: AuthRequest, res: Respons
     const isOwner = project.clientId === userId;
     const isAdmin = req.user?.role === 'ADMIN';
     const isProfessional = req.user?.role === 'PROFESSIONAL';
-    const isAssigned = project.assignments.some(a => a.userId === userId);
+    
+    // Check specific relations for the current user
+    const userAssignment = project.assignments.find(a => a.userId === userId);
+    const isAssigned = userAssignment && ['ACTIVE', 'ACCEPTED', 'ASSIGNED'].includes(userAssignment.status);
+    const isInterested = userAssignment?.status === 'INTERESTED';
+    
     const isPublicAccepted = project.status === 'ACCEPTED';
 
     if (!isOwner && !isAdmin && (!isProfessional || (!isPublicAccepted && !isAssigned))) {
@@ -375,7 +394,8 @@ export const getProjectById = asyncHandler(async (req: AuthRequest, res: Respons
         success: true,
         data: {
             ...project,
-            isAssigned, // Tell the frontend if the current user is assigned
+            isAssigned, // Explicitly tell the frontend if the current user is assigned (ACTIVE)
+            isInterested, // Explicitly tell the frontend if the current user has expressed interest
         },
     });
 });

@@ -130,6 +130,8 @@ model Project {
   budgetRange    BudgetTier
   timeline       TimelineTier
   coverImageUrl  String?
+  category       String        @default("Technology & Software")
+  categoryData   Json?         @default("{}")
   status         ProjectStatus @default(PENDING)
   clientId       String
   client         User          @relation(fields: [clientId], references: [id], onDelete: Cascade)
@@ -142,6 +144,7 @@ model Project {
   documents      ProjectDocument[]
   projectInfo    ProjectInfo[]
   tasks          ProjectTask[]
+  sprints        ProjectSprint[]
 }
 
 model ProjectAssignment {
@@ -246,6 +249,35 @@ model ProjectTask {
   
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
+  
+  sprintId    String?
+  sprint      ProjectSprint? @relation(fields: [sprintId], references: [id], onDelete: SetNull)
+  progress    Float          @default(0)
+  sprintWeight  Float        @default(0) // weight of task in the sprint (0-100)
+  
+  duration      String?
+  richText      String?      @db.Text
+}
+
+model ProjectSprint {
+  id              String        @id @default(cuid())
+  projectId       String
+  project         Project       @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  title           String
+  description     String?       @db.Text
+  deliverables    String?       @db.Text
+  startDate       DateTime?
+  dueDate         DateTime?
+  projectWeight   Float         @default(0) // weight of sprint in the project (0-100)
+  progress        Float         @default(0) // completion progress (0-100)
+  status          String        @default("PLANNED") // PLANNED, ACTIVE, COMPLETED, ON_HOLD
+  assets          String[]
+  createdAt       DateTime      @default(now())
+  updatedAt       DateTime      @updatedAt
+
+  tasks           ProjectTask[]
+  duration        String?
+  richText        String?       @db.Text
 }
 
 model InvestmentPitch {

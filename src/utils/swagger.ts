@@ -711,7 +711,9 @@ const swaggerDocument = {
                                     status: { type: 'string', enum: ['TODO', 'IN_PROGRESS', 'IN_REVIEW', 'DONE', 'DO_AGAIN', 'CANCELLED'] },
                                     priority: { type: 'string', enum: ['LOW', 'MEDIUM', 'HIGH', 'URGENT'] },
                                     dueDate: { type: 'string', format: 'date-time' },
-                                    professionalIds: { type: 'array', items: { type: 'string' } }
+                                    professionalIds: { type: 'array', items: { type: 'string' } },
+                                    duration: { type: 'string', example: '2 weeks' },
+                                    richText: { type: 'string', description: 'HTML or JSON rich text data' }
                                 },
                                 required: ['title']
                             }
@@ -1003,6 +1005,81 @@ const swaggerDocument = {
                 security: [{ bearerAuth: [] }],
                 parameters: [{ in: 'path', name: 'id', required: true, schema: { type: 'string' } }],
                 responses: { 200: { description: 'Info deleted' } }
+            }
+        },
+        '/api/projects/{projectId}/sprints': {
+            get: {
+                summary: 'Get Project Sprints',
+                tags: ['Sprints'],
+                security: [{ bearerAuth: [] }],
+                parameters: [{ in: 'path', name: 'projectId', required: true, schema: { type: 'string' } }],
+                responses: { 200: { description: 'Project sprints retrieved' } }
+            }
+        },
+        '/api/admin/projects/{projectId}/sprint': {
+            post: {
+                summary: 'Create Project Sprint (Admin)',
+                tags: ['Admin Sprints'],
+                security: [{ bearerAuth: [] }],
+                parameters: [{ in: 'path', name: 'projectId', required: true, schema: { type: 'string' } }],
+                requestBody: {
+                    required: true,
+                    content: {
+                        'application/json': {
+                            schema: {
+                                type: 'object',
+                                properties: {
+                                    title: { type: 'string' },
+                                    description: { type: 'string' },
+                                    deliverables: { type: 'string' },
+                                    projectWeight: { type: 'number', description: '0-100 percentage' },
+                                    progress: { type: 'number', description: '0-100 percentage' },
+                                    status: { type: 'string', enum: ['PLANNED', 'ACTIVE', 'COMPLETED', 'ON_HOLD'] },
+                                    duration: { type: 'string', example: '1 month' },
+                                    richText: { type: 'string', description: 'HTML or JSON rich text data' }
+                                },
+                                required: ['title']
+                            }
+                        }
+                    }
+                },
+                responses: { 201: { description: 'Sprint created' }, 404: { description: 'Project not found' } }
+            }
+        },
+        '/api/admin/sprint/{id}': {
+            put: {
+                summary: 'Update Sprint (Admin)',
+                tags: ['Admin Sprints'],
+                security: [{ bearerAuth: [] }],
+                parameters: [{ in: 'path', name: 'id', required: true, schema: { type: 'string' } }],
+                requestBody: {
+                    required: true,
+                    content: {
+                        'application/json': {
+                            schema: {
+                                type: 'object',
+                                properties: {
+                                    title: { type: 'string' },
+                                    description: { type: 'string' },
+                                    deliverables: { type: 'string' },
+                                    projectWeight: { type: 'number' },
+                                    progress: { type: 'number' },
+                                    status: { type: 'string', enum: ['PLANNED', 'ACTIVE', 'COMPLETED', 'ON_HOLD'] },
+                                    duration: { type: 'string' },
+                                    richText: { type: 'string' }
+                                }
+                            }
+                        }
+                    }
+                },
+                responses: { 200: { description: 'Sprint updated' } }
+            },
+            delete: {
+                summary: 'Delete Sprint (Admin)',
+                tags: ['Admin Sprints'],
+                security: [{ bearerAuth: [] }],
+                parameters: [{ in: 'path', name: 'id', required: true, schema: { type: 'string' } }],
+                responses: { 200: { description: 'Sprint deleted' } }
             }
         }
     },

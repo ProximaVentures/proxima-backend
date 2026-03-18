@@ -1022,7 +1022,7 @@ export const deleteProjectDocument = asyncHandler(async (req: Request, res: Resp
  */
 export const addProjectTask = asyncHandler(async (req: Request, res: Response) => {
     const projectId = req.params.id as string;
-    const { title, description, priority, dueDate, professionalIds, assignedToId } = req.body;
+    const { title, description, priority, dueDate, professionalIds, assignedToId, sprintId, progress, sprintWeight, duration, richText } = req.body;
 
     if (!title) {
         throw new AppError('Title is required', 400);
@@ -1050,7 +1050,12 @@ export const addProjectTask = asyncHandler(async (req: Request, res: Response) =
             status: 'TODO',
             priority: priority || 'MEDIUM',
             dueDate: dueDate ? new Date(dueDate) : null,
-            professionalIds: professionalIds || (assignedToId ? [assignedToId] : [])
+            professionalIds: professionalIds || (assignedToId ? [assignedToId] : []),
+            sprintId: sprintId || null,
+            progress: Number(progress) || 0,
+            sprintWeight: Number(sprintWeight) || 0,
+            duration,
+            richText
         },
         include: {
             project: {
@@ -1104,7 +1109,7 @@ export const addProjectTask = asyncHandler(async (req: Request, res: Response) =
  */
 export const editProjectTask = asyncHandler(async (req: Request, res: Response) => {
     const id = req.params.id as string;
-    const { title, description, priority, dueDate, assignedToId, status } = req.body;
+    const { title, description, priority, dueDate, assignedToId, status, sprintId, progress, sprintWeight, duration, richText } = req.body;
 
     // Optional duplicate title check for edited task
     if (title) {
@@ -1124,8 +1129,13 @@ export const editProjectTask = asyncHandler(async (req: Request, res: Response) 
         description,
         priority,
         status,
-        professionalIds: assignedToId ? [assignedToId] : undefined
+        professionalIds: assignedToId ? [assignedToId] : undefined,
     };
+    if (sprintId !== undefined) updateData.sprintId = sprintId;
+    if (progress !== undefined) updateData.progress = Number(progress);
+    if (sprintWeight !== undefined) updateData.sprintWeight = Number(sprintWeight);
+    if (duration !== undefined) updateData.duration = duration;
+    if (richText !== undefined) updateData.richText = richText;
 
     if (dueDate) updateData.dueDate = new Date(dueDate);
 

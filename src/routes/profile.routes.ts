@@ -10,6 +10,7 @@ router.use(protect);
 
 // Get Current User Profile
 router.get('/me', profileController.getMe);
+router.patch('/me', profileController.updateMe);
 
 // This route requires onboarding to be complete
 router.get('/dashboard', ensureOnboardingComplete, (req: AuthRequest, res) => {
