@@ -48,77 +48,122 @@ export const vetProfessional = asyncHandler(async (req: Request, res: Response) 
     });
 
     // Notify User via Email
-    const emailSubject = status === 'VETTED' ? '🎉 Congratulations! Your Profile is Verified' : 'Profile Vetting Update';
+    // Notify User via Email & In-app Notification
+    const emailSubject = status === 'VETTED' ? '🎉 Congratulations! Your ProVen Profile is Verified' : 'Action Required: Your ProVen Profile Vetting';
     const clientName = profile.firstName || profile.user?.username || 'Professional';
     
     let message = '';
-    let frontendUrl = process.env.FRONTEND_URL || 'http://localhost:3000';
+    const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:3000';
     let ctaLink = frontendUrl;
     let ctaText = 'Login to Dashboard';
+    const logoUrl = "https://proven-frontend.vercel.app/logo.png"; // Fallback URL or hosted asset
 
     if (status === 'VETTED') {
-        message = `Great news! Your professional profile has been verified and approved by our team. You can now access the Professional Dashboard and start applying for high-value projects.`;
+        message = `Great news! Your professional profile has been verified and approved by our team. You now have full access to high-value projects and ProVen's exclusive professional tools.`;
         ctaLink = `${frontendUrl}/dashboard/professional`;
-        ctaText = 'Go to Professional Dashboard';
+        ctaText = 'Access Professional Dashboard';
     } else {
-        message = `Unfortunately, your professional profile application was not approved at this time.<br><br><strong>Remarks from our team:</strong><br>${remarks || 'Insufficient documentation or details provided in your profile.'}<br><br>Please update your profile information and try again.`;
+        message = `Thank you for your interest in ProVen. After reviewing your application, our team has determined that some updates are needed before we can proceed with your verification.`;
         ctaLink = `${frontendUrl}/dashboard/pending`;
-        ctaText = 'Review Application';
+        ctaText = 'Update Application';
     }
 
     const emailHtmlBody = `
         <!DOCTYPE html>
         <html>
         <head>
+            <meta charset="utf-8">
+            <meta name="viewport" content="width=device-width, initial-scale=1.0">
             <style>
-                body { font-family: 'Inter', -apple-system, sans-serif; color: #1a1a1a; margin: 0; padding: 0; background-color: #f9fafb; }
-                .container { max-width: 600px; margin: 40px auto; background: #ffffff; border-radius: 24px; overflow: hidden; border: 1px solid #e5e7eb; box-shadow: 0 10px 15px -3px rgba(0,0,0,0.1); }
-                .header { background: #000000; padding: 40px 32px; text-align: center; }
-                .logo { color: #f97316; font-size: 28px; font-weight: 800; letter-spacing: -0.025em; margin: 0; }
-                .content { padding: 48px 32px; }
-                .greeting { font-size: 18px; font-weight: 600; color: #374151; margin-bottom: 12px; }
-                .message { font-size: 16px; line-height: 1.6; color: #4b5563; margin-bottom: 32px; }
-                .status-card { background: ${status === 'VETTED' ? '#f0fdf4' : '#fef2f2'}; border-radius: 16px; padding: 24px; border: 1px solid ${status === 'VETTED' ? '#dcfce7' : '#fee2e2'}; margin-bottom: 32px; }
-                .status-title { font-weight: 700; color: ${status === 'VETTED' ? '#166534' : '#991b1b'}; margin-bottom: 4px; display: block; font-size: 18px; }
-                .cta-button { display: inline-block; background: #f97316; color: #ffffff !important; padding: 14px 32px; border-radius: 12px; font-weight: 700; text-decoration: none; transition: transform 0.2s; }
-                .footer { background: #f9fafb; padding: 32px; text-align: center; border-top: 1px solid #f1f5f9; }
-                .footer-text { font-size: 12px; color: #9ca3af; margin: 0 0 16px; }
-                .brand { color: #1a1a1a; font-weight: 700; }
+                body { font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; color: #1e293b; margin: 0; padding: 0; background-color: #f8fafc; }
+                .wrapper { width: 100%; table-layout: fixed; background-color: #f8fafc; padding-bottom: 40px; }
+                .container { max-width: 600px; margin: 0 auto; background: #ffffff; border-radius: 24px; overflow: hidden; margin-top: 40px; border: 1px solid #e2e8f0; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05); }
+                .header { background: #0f172a; padding: 48px 32px; text-align: center; }
+                .logo-text { color: #f97316; font-size: 32px; font-weight: 900; letter-spacing: -0.05em; margin: 0; text-transform: uppercase; }
+                .logo-img { max-width: 140px; height: auto; margin-bottom: 12px; }
+                .content { padding: 48px 40px; }
+                .greeting { font-size: 20px; font-weight: 800; color: #0f172a; margin-bottom: 16px; letter-spacing: -0.01em; }
+                .message { font-size: 16px; line-height: 1.7; color: #475569; margin-bottom: 32px; }
+                .status-card { background: ${status === 'VETTED' ? '#f0fdf4' : '#fff7ed'}; border-radius: 20px; padding: 24px; border: 1px solid ${status === 'VETTED' ? '#dcfce7' : '#ffedd5'}; margin-bottom: 32px; }
+                .status-label { font-size: 12px; font-weight: 800; text-transform: uppercase; letter-spacing: 0.1em; color: ${status === 'VETTED' ? '#166534' : '#9a3412'}; margin-bottom: 8px; display: block; }
+                .status-value { font-size: 24px; font-weight: 900; color: ${status === 'VETTED' ? '#14532d' : '#7c2d12'}; display: block; }
+                .remarks-section { margin-top: 16px; padding-top: 16px; border-top: 1px dashed ${status === 'VETTED' ? '#bbf7d0' : '#fed7aa'}; }
+                .remarks-text { font-size: 14px; color: #64748b; font-style: italic; line-height: 1.5; }
+                .cta-container { text-align: center; margin-top: 8px; }
+                .cta-button { display: inline-block; background: #f97316; color: #ffffff !important; padding: 18px 36px; border-radius: 16px; font-weight: 800; text-decoration: none; font-size: 16px; box-shadow: 0 10px 15px -3px rgba(249, 115, 22, 0.3); transition: all 0.2s; }
+                .footer { background: #f8fafc; padding: 40px; text-align: center; border-top: 1px solid #f1f5f9; }
+                .footer-text { font-size: 13px; color: #94a3b8; margin: 0 0 16px; line-height: 1.5; }
+                .social-links { margin-bottom: 24px; }
+                .copyright { font-size: 12px; color: #cbd5e1; font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em; }
             </style>
         </head>
         <body>
-            <div class="container">
-                <div class="header">
-                    <h1 class="logo">PROVEN</h1>
-                </div>
-                <div class="content">
-                    <p class="greeting">Hello ${clientName},</p>
-                    <p class="message">${message}</p>
-                    
-                    <div class="status-card">
-                        <span class="status-title">Status: ${status === 'VETTED' ? 'Approved' : 'Rejected'}</span>
+            <div class="wrapper">
+                <div class="container">
+                    <div class="header">
+                        <!-- <img src="${logoUrl}" alt="ProVen Logo" class="logo-img"> -->
+                        <h1 class="logo-text">ProVen</h1>
                     </div>
-                    
-                    <a href="${ctaLink}" class="cta-button">
-                        ${ctaText}
-                    </a>
-                </div>
-                <div class="footer">
-                    <p class="footer-text">This is an automated notification from ProVen Platform.</p>
-                    <div class="brand">© 2026 ProVen</div>
+                    <div class="content">
+                        <p class="greeting">Hi ${clientName},</p>
+                        <p class="message">${message}</p>
+                        
+                        <div class="status-card">
+                            <span class="status-label">Profile Status</span>
+                            <span class="status-value">${status === 'VETTED' ? '✓ Verified' : '⚠ Action Required'}</span>
+                            ${status !== 'VETTED' ? `
+                            <div class="remarks-section">
+                                <span class="status-label" style="font-size: 10px; opacity: 0.7;">Admin Feedback</span>
+                                <p class="remarks-text">"${remarks || 'Please provide more details about your experience and skills.'}"</p>
+                            </div>` : ''}
+                        </div>
+                        
+                        <div class="cta-container">
+                            <a href="${ctaLink}" class="cta-button">
+                                ${ctaText}
+                            </a>
+                        </div>
+                    </div>
+                    <div class="footer">
+                        <p class="footer-text">You received this because you requested verification on the ProVen platform. If you didn't, please ignore this email.</p>
+                        <div class="copyright">© 2026 ProVen Global • Build the Future</div>
+                    </div>
                 </div>
             </div>
         </body>
         </html>
     `;
 
+    // Create In-app Notification for Real-time Feedback
+    try {
+        await prisma.notification.create({
+            data: {
+                userId: profile.userId,
+                title: status === 'VETTED' ? 'Verification Successful' : 'Profile Update Required',
+                message: status === 'VETTED' 
+                    ? 'Congratulations! Your professional profile has been approved.' 
+                    : 'Your profile application needs more information. Please check the feedback.',
+                type: status === 'VETTED' ? 'INFO' : 'BRIEFING',
+                link: status === 'VETTED' ? '/dashboard/professional' : '/dashboard/pending',
+            }
+        });
+        console.log(`[Admin] In-app notification created for user ${profile.userId}`);
+    } catch (noteError) {
+        console.error('[Admin] Failed to create in-app notification:', noteError);
+    }
+
+
     // Check if user exists and has email before sending
+    console.log(`[Admin] Attempting to send ${status === 'VETTED' ? 'approval' : 'rejection'} email to: ${profile.user?.email}`);
     if (profile.user && profile.user.email) {
         try {
-            await sendEmail(profile.user.email, emailSubject, emailHtmlBody);
+            const emailResult = await sendEmail(profile.user.email, emailSubject, emailHtmlBody);
+            console.log(`[Admin] Email send result: ${emailResult ? 'SUCCESS' : 'FAILURE'}`);
         } catch (emailError) {
             console.error('[Admin] Welcome/Reject email failed to send:', emailError);
         }
+    } else {
+        console.warn('[Admin] No email found for professional user, skipping email notification.', { userId: profile.user?.id });
     }
 
     res.status(200).json({

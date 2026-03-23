@@ -8,29 +8,29 @@ const resend = new Resend(process.env.RESEND_API_KEY);
  * Generic Email Sender via Resend API
  */
 export const sendEmail = async (to: string, subject: string, html: string) => {
-  const from = process.env.EMAIL_FROM || 'onboarding@resend.dev';
-
-
+  const fromValue = process.env.EMAIL_FROM || 'onboarding@resend.dev';
 
   if (!process.env.RESEND_API_KEY) {
     console.error('[🚨 RESEND FAILED]: RESEND_API_KEY is missing in .env');
     return false;
   }
 
+  console.log(`[📩 SENDING EMAIL]: to: ${to}, subject: ${subject}, from: ${fromValue}`);
+
   try {
     const { data, error } = await resend.emails.send({
-      from: `Proven <${from}>`,
+      from: `Proven <${fromValue}>`,
       to,
       subject,
       html,
     });
 
     if (error) {
-      console.error(`[🚨 RESEND API ERROR]: recipient: ${to}`, error);
+      console.error(`[🚨 RESEND API ERROR]: recipient: ${to}, from: ${fromValue}`, error);
       return false;
     }
 
-
+    console.log(`[✅ EMAIL SENT successfully]: recipient: ${to}, id: ${data?.id}`);
     return true;
   } catch (error: any) {
     console.error(`[🚨 RESEND UNEXPECTED ERROR]: recipient: ${to}`, error);
