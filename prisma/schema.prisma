@@ -117,6 +117,7 @@ model User {
   username      String?
   password      String?
   role          Role      @default(CLIENT)
+  roles         Role[]    @default([CLIENT])
   provider      String    @default("credentials")
   providerId    String?
   phone         String?

@@ -36,6 +36,7 @@ export const register = asyncHandler(async (req: Request<{}, {}, RegisterInput>,
                 password: hashedPassword,
                 username,
                 role,
+                roles: [role],
                 phone: phone || null,
             },
         });
@@ -142,6 +143,7 @@ export const login = asyncHandler(async (req: Request<{}, {}, LoginInput>, res: 
                     id: user.id,
                     email: user.email,
                     role: user.role,
+                    roles: user.roles,
                     onboardingComplete: user.profile?.onboardingComplete || false,
                 },
             },
@@ -187,17 +189,32 @@ export const completeProfile = asyncHandler(async (req: AuthRequest, res: Respon
 
     if (!userId) throw new AppError('User not authenticated', 401);
 
-    const updatedProfile = await prisma.profile.update({
-        where: { userId },
-        data: {
-            firstName,
-            lastName,
-            bio,
-            category,
-            metadata,
-            onboardingComplete: true,
-            vettingStatus: 'PENDING',
-        },
+    const updatedProfile = await prisma.$transaction(async (tx) => {
+        const profile = await tx.profile.update({
+            where: { userId },
+            data: {
+                firstName,
+                lastName,
+                bio,
+                category,
+                metadata,
+                onboardingComplete: true,
+                vettingStatus: 'PENDING',
+            },
+        });
+
+        // Add PROFESSIONAL to roles if not already there
+        const user = await tx.user.findUnique({ where: { id: userId } });
+        if (user && !user.roles.includes('PROFESSIONAL')) {
+            await tx.user.update({
+                where: { id: userId },
+                data: {
+                    roles: { set: [...user.roles, 'PROFESSIONAL'] }
+                }
+            });
+        }
+
+        return profile;
     });
 
     res.status(200).json({
@@ -279,7 +296,8 @@ export const socialLogin = asyncHandler(async (req: Request<{}, {}, SocialLoginI
                     isVerified: true, // Social users are pre-verified
                     provider,
                     providerId,
-                    role: 'CLIENT', // Default role for searchers as requested
+                    role: 'CLIENT', 
+                    roles: ['CLIENT'], 
                 },
             });
 
@@ -334,6 +352,7 @@ export const socialLogin = asyncHandler(async (req: Request<{}, {}, SocialLoginI
                 id: user.id,
                 email: user.email,
                 role: user.role,
+                roles: user.roles,
                 onboardingComplete: user.profile?.onboardingComplete || false,
                 hasSeenRolePrompt: user.profile?.hasSeenRolePrompt || false,
             },

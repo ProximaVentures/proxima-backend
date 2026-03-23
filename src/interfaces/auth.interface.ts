@@ -4,6 +4,7 @@ import { Role } from '@prisma/client';
 export interface AuthUser {
     id: string;
     role: Role;
+    roles: Role[];
     email: string;
     onboardingComplete: boolean;
     vettingStatus?: string | null | undefined;

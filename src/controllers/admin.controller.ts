@@ -48,14 +48,77 @@ export const vetProfessional = asyncHandler(async (req: Request, res: Response) 
     });
 
     // Notify User via Email
-    const emailSubject = status === 'VETTED' ? 'Congratulations! Your Profile is Verified' : 'Profile Vetting Update';
-    const emailBody = status === 'VETTED'
-        ? `<p>Hi ${profile.firstName || 'User'},</p><p>Your profile has been approved! You can now apply for jobs.</p>`
-        : `<p>Hi ${profile.firstName || 'User'},</p><p>Unfortunately your profile was rejected.</p><p><strong>Remarks:</strong> ${remarks || 'Insufficient documentation.'}</p>`;
+    const emailSubject = status === 'VETTED' ? '🎉 Congratulations! Your Profile is Verified' : 'Profile Vetting Update';
+    const clientName = profile.firstName || profile.user?.username || 'Professional';
+    
+    let message = '';
+    let frontendUrl = process.env.FRONTEND_URL || 'http://localhost:3000';
+    let ctaLink = frontendUrl;
+    let ctaText = 'Login to Dashboard';
+
+    if (status === 'VETTED') {
+        message = `Great news! Your professional profile has been verified and approved by our team. You can now access the Professional Dashboard and start applying for high-value projects.`;
+        ctaLink = `${frontendUrl}/dashboard/professional`;
+        ctaText = 'Go to Professional Dashboard';
+    } else {
+        message = `Unfortunately, your professional profile application was not approved at this time.<br><br><strong>Remarks from our team:</strong><br>${remarks || 'Insufficient documentation or details provided in your profile.'}<br><br>Please update your profile information and try again.`;
+        ctaLink = `${frontendUrl}/dashboard/pending`;
+        ctaText = 'Review Application';
+    }
+
+    const emailHtmlBody = `
+        <!DOCTYPE html>
+        <html>
+        <head>
+            <style>
+                body { font-family: 'Inter', -apple-system, sans-serif; color: #1a1a1a; margin: 0; padding: 0; background-color: #f9fafb; }
+                .container { max-width: 600px; margin: 40px auto; background: #ffffff; border-radius: 24px; overflow: hidden; border: 1px solid #e5e7eb; box-shadow: 0 10px 15px -3px rgba(0,0,0,0.1); }
+                .header { background: #000000; padding: 40px 32px; text-align: center; }
+                .logo { color: #f97316; font-size: 28px; font-weight: 800; letter-spacing: -0.025em; margin: 0; }
+                .content { padding: 48px 32px; }
+                .greeting { font-size: 18px; font-weight: 600; color: #374151; margin-bottom: 12px; }
+                .message { font-size: 16px; line-height: 1.6; color: #4b5563; margin-bottom: 32px; }
+                .status-card { background: ${status === 'VETTED' ? '#f0fdf4' : '#fef2f2'}; border-radius: 16px; padding: 24px; border: 1px solid ${status === 'VETTED' ? '#dcfce7' : '#fee2e2'}; margin-bottom: 32px; }
+                .status-title { font-weight: 700; color: ${status === 'VETTED' ? '#166534' : '#991b1b'}; margin-bottom: 4px; display: block; font-size: 18px; }
+                .cta-button { display: inline-block; background: #f97316; color: #ffffff !important; padding: 14px 32px; border-radius: 12px; font-weight: 700; text-decoration: none; transition: transform 0.2s; }
+                .footer { background: #f9fafb; padding: 32px; text-align: center; border-top: 1px solid #f1f5f9; }
+                .footer-text { font-size: 12px; color: #9ca3af; margin: 0 0 16px; }
+                .brand { color: #1a1a1a; font-weight: 700; }
+            </style>
+        </head>
+        <body>
+            <div class="container">
+                <div class="header">
+                    <h1 class="logo">PROVEN</h1>
+                </div>
+                <div class="content">
+                    <p class="greeting">Hello ${clientName},</p>
+                    <p class="message">${message}</p>
+                    
+                    <div class="status-card">
+                        <span class="status-title">Status: ${status === 'VETTED' ? 'Approved' : 'Rejected'}</span>
+                    </div>
+                    
+                    <a href="${ctaLink}" class="cta-button">
+                        ${ctaText}
+                    </a>
+                </div>
+                <div class="footer">
+                    <p class="footer-text">This is an automated notification from ProVen Platform.</p>
+                    <div class="brand">© 2026 ProVen</div>
+                </div>
+            </div>
+        </body>
+        </html>
+    `;
 
     // Check if user exists and has email before sending
     if (profile.user && profile.user.email) {
-        await sendEmail(profile.user.email, emailSubject, emailBody);
+        try {
+            await sendEmail(profile.user.email, emailSubject, emailHtmlBody);
+        } catch (emailError) {
+            console.error('[Admin] Welcome/Reject email failed to send:', emailError);
+        }
     }
 
     res.status(200).json({
@@ -308,6 +371,7 @@ export const assignProfessional = asyncHandler(async (req: Request, res: Respons
  */
 export const getAllUsers = asyncHandler(async (req: Request, res: Response) => {
     const role = typeof req.query.role === 'string' ? req.query.role : undefined;
+    const search = typeof req.query.search === 'string' ? req.query.search : undefined;
     const page = typeof req.query.page === 'string' ? parseInt(req.query.page) : 1;
     const limit = typeof req.query.limit === 'string' ? parseInt(req.query.limit) : 10;
 
@@ -316,6 +380,22 @@ export const getAllUsers = asyncHandler(async (req: Request, res: Response) => {
     const where: any = {};
     if (role) {
         where.role = role;
+    }
+
+    if (search) {
+        where.OR = [
+            { id: { contains: search, mode: 'insensitive' } },
+            { email: { contains: search, mode: 'insensitive' } },
+            { username: { contains: search, mode: 'insensitive' } },
+            { 
+                profile: {
+                    OR: [
+                        { firstName: { contains: search, mode: 'insensitive' } },
+                        { lastName: { contains: search, mode: 'insensitive' } }
+                    ]
+                }
+            }
+        ];
     }
 
     const users = await prisma.user.findMany({
@@ -343,6 +423,73 @@ export const getAllUsers = asyncHandler(async (req: Request, res: Response) => {
         totalPages: Math.ceil(total / Number(limit)),
         currentPage: Number(page),
         data: users
+    });
+});
+
+/**
+ * Get User By ID (Admin)
+ */
+export const getUserById = asyncHandler(async (req: Request, res: Response) => {
+    const { id } = req.params as { id: string };
+
+    const user = await prisma.user.findUnique({
+        where: { id },
+        include: {
+            profile: true,
+            _count: {
+                select: {
+                    projects: true,
+                    pitches: true
+                }
+            }
+        }
+    });
+
+    if (!user) {
+        throw new AppError('User not found', 404);
+    }
+
+    res.status(200).json({
+        success: true,
+        data: user
+    });
+});
+
+/**
+ * Get Professional By ID (Admin)
+ * Fetches by either Profile ID or User ID for robustness.
+ */
+export const getProfessionalById = asyncHandler(async (req: Request, res: Response) => {
+    const { id } = req.params as { id: string };
+
+    let profile = await prisma.profile.findFirst({
+        where: {
+            OR: [
+                { id: id },
+                { userId: id }
+            ]
+        },
+        include: {
+            user: {
+                include: {
+                    _count: {
+                        select: {
+                            projects: true,
+                            pitches: true
+                        }
+                    }
+                }
+            }
+        }
+    });
+
+    if (!profile) {
+        throw new AppError('Professional profile not found', 404);
+    }
+
+    res.status(200).json({
+        success: true,
+        data: profile
     });
 });
 

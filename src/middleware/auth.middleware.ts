@@ -57,6 +57,7 @@ export const protect = async (req: AuthRequest, res: Response, next: NextFunctio
         req.user = {
             id: user.id,
             role: user.role,
+            roles: user.roles, // New array field
             email: user.email,
             onboardingComplete: user.profile?.onboardingComplete || false,
             vettingStatus: user.profile?.vettingStatus as string | undefined
