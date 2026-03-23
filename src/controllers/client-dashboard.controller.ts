@@ -240,14 +240,49 @@ export const getSprintBoard = asyncHandler(async (req: AuthRequest, res: Respons
             reviews: { orderBy: { createdAt: 'desc' } },
             comments: { orderBy: { createdAt: 'asc' } },
             tasks: { orderBy: { createdAt: 'asc' } },
+            activities: { orderBy: { createdAt: 'asc' } },
         }
     });
 
     if (!sprint) throw new AppError('Sprint not found', 404);
     if (sprint.projectId !== projectId) throw new AppError('Sprint does not belong to this project', 400);
 
-    // ── Compute progress summary ──
+    // ── Collect ALL user IDs we need to resolve (deliverable authors, comment authors, review authors, activity actors) ──
     const sprintDeliverables: any[] = sprint.sprintDeliverables || [];
+    const comments: any[] = sprint.comments || [];
+    const reviews: any[] = sprint.reviews || [];
+    const activities: any[] = sprint.activities || [];
+
+    const allUserIds = [
+        ...comments.map((c: any) => c.authorId),
+        ...reviews.map((r: any) => r.reviewerId),
+        ...sprintDeliverables.map((d: any) => d.authorId).filter(Boolean),
+        ...activities.map((a: any) => a.actorId).filter(Boolean),
+    ];
+    const uniqueUserIds = [...new Set(allUserIds)] as string[];
+
+    const users = uniqueUserIds.length > 0
+        ? await prisma.user.findMany({
+            where: { id: { in: uniqueUserIds } },
+            select: {
+                id: true,
+                username: true,
+                role: true,
+                profile: { select: { firstName: true, lastName: true, avatarUrl: true } }
+            }
+        })
+        : [];
+
+    const userMap = new Map((users as any[]).map((u: any) => [u.id, {
+        id: u.id,
+        firstName: u.profile?.firstName || '',
+        lastName: u.profile?.lastName || '',
+        name: `${u.profile?.firstName || ''} ${u.profile?.lastName || ''}`.trim() || u.username || 'Unknown',
+        avatarUrl: u.profile?.avatarUrl || null,
+        role: u.role,
+    }]));
+
+    // ── Compute progress summary ──
     const deliverablesSubmitted = sprintDeliverables.filter((d: any) => d.status !== 'PENDING').length;
     const deliverablesTotal = sprintDeliverables.length;
 
@@ -271,7 +306,7 @@ export const getSprintBoard = asyncHandler(async (req: AuthRequest, res: Respons
         else if (completionRatio > 0) teamVelocity = 'Behind schedule';
     }
 
-    // ── Payment info ──
+    // ── Payment info (with paidAt + createdAt) ──
     const paymentInfo = sprint.payment ? {
         id: sprint.payment.id,
         totalAmount: sprint.payment.totalAmount,
@@ -283,85 +318,123 @@ export const getSprintBoard = asyncHandler(async (req: AuthRequest, res: Respons
         status: sprint.payment.status,
         receiptUrl: sprint.payment.receiptUrl,
         transactionRef: sprint.payment.transactionRef,
+        paidAt: sprint.payment.paidAt,
+        createdAt: sprint.payment.createdAt,
     } : null;
 
-    // ── Resolve comment/review author names ──
-    const comments: any[] = sprint.comments || [];
-    const reviews: any[] = sprint.reviews || [];
-    const authorIds = [
-        ...comments.map((c: any) => c.authorId),
-        ...reviews.map((r: any) => r.reviewerId),
-    ];
-    const uniqueAuthorIds = [...new Set(authorIds)] as string[];
-    const authors = uniqueAuthorIds.length > 0
-        ? await prisma.user.findMany({
-            where: { id: { in: uniqueAuthorIds } },
-            select: {
-                id: true,
-                username: true,
-                role: true,
-                profile: { select: { firstName: true, lastName: true, avatarUrl: true } }
-            }
-        })
-        : [];
-    const authorMap = new Map((authors as any[]).map((a: any) => [a.id, {
-        id: a.id,
-        name: `${a.profile?.firstName || ''} ${a.profile?.lastName || ''}`.trim() || a.username || 'Unknown',
-        avatarUrl: a.profile?.avatarUrl || null,
-        role: a.role,
-    }]));
+    // ── Determine clientApproved and approvedAt from reviews ──
+    const approvalReview = reviews.find((r: any) => r.action === 'APPROVED');
+    const latestChangeRequest = reviews.find((r: any) => r.action === 'CHANGES_REQUESTED');
 
     const objectives: any[] = sprint.objectives || [];
 
+    // ── Build the flattened response matching frontend expectation ──
     res.status(200).json({
         success: true,
         data: {
-            sprint: {
-                id: sprint.id,
-                sprintNumber: sprint.sprintNumber,
-                title: sprint.title,
-                description: sprint.description,
-                richText: sprint.richText,
-                status: sprint.status,
-                startDate: sprint.startDate,
-                dueDate: sprint.dueDate,
-                progress: Math.round(sprint.progress),
-                budget: sprint.budget,
-            },
-            payment: paymentInfo,
+            id: sprint.id,
+            projectId: sprint.projectId,
+            sprintNumber: sprint.sprintNumber,
+            title: sprint.title,
+            description: sprint.description,
+            richText: sprint.richText,
+            status: sprint.status,
+            progress: Math.round(sprint.progress),
+            startDate: sprint.startDate,
+            endDate: sprint.dueDate,
+            duration: sprintDuration,
+            budget: sprint.budget,
+            clientApproved: sprint.status === 'APPROVED',
+            approvedAt: approvalReview?.createdAt || null,
+            changeRequestNote: latestChangeRequest?.comment || null,
+
+            // 1. Objectives array
             objectives: objectives.map((o: any) => ({
                 id: o.id,
                 title: o.title,
                 description: o.description,
                 isCompleted: o.isCompleted,
-                order: o.order,
             })),
-            deliverables: sprintDeliverables.map((d: any) => ({
-                id: d.id,
-                title: d.title,
-                description: d.description,
-                type: d.type,
-                fileUrl: d.fileUrl,
-                fileName: d.fileName,
-                fileSize: d.fileSize,
-                commitCount: d.commitCount,
-                status: d.status,
-                submittedAt: d.submittedAt,
-                reviewedAt: d.reviewedAt,
+
+            // 2. Sprint Deliverables with author info
+            sprintDeliverables: sprintDeliverables.map((d: any) => {
+                const author = d.authorId ? userMap.get(d.authorId) : null;
+                return {
+                    id: d.id,
+                    title: d.title,
+                    description: d.description,
+                    type: d.type,
+                    status: d.status,
+                    fileUrl: d.fileUrl,
+                    fileName: d.fileName,
+                    fileSize: d.fileSize,
+                    commitCount: d.commitCount,
+                    author: author ? {
+                        id: author.id,
+                        firstName: author.firstName,
+                        lastName: author.lastName,
+                        avatarUrl: author.avatarUrl,
+                    } : null,
+                    createdAt: d.createdAt,
+                };
+            }),
+
+            // 3. Payment + budget
+            payment: paymentInfo,
+
+            // 4. Activity Log with actor info
+            activityLog: activities.map((a: any) => {
+                const actor = a.actorId ? userMap.get(a.actorId) : null;
+                return {
+                    id: a.id,
+                    type: a.type,
+                    description: a.description,
+                    createdAt: a.createdAt,
+                    actor: actor ? {
+                        firstName: actor.firstName,
+                        lastName: actor.lastName,
+                        avatarUrl: actor.avatarUrl,
+                    } : null,
+                };
+            }),
+
+            // Tasks (for Kanban / progress)
+            tasks: tasks.map((t: any) => ({
+                id: t.id,
+                title: t.title,
+                description: t.description,
+                status: t.status,
+                priority: t.priority,
+                dueDate: t.dueDate,
+                progress: t.progress,
             })),
+
+            // Reviews & Comments (kept for backward compat)
             reviews: reviews.map((r: any) => ({
                 id: r.id,
                 action: r.action,
                 comment: r.comment,
-                reviewer: authorMap.get(r.reviewerId) || { id: r.reviewerId, name: 'Unknown' },
+                reviewer: userMap.get(r.reviewerId) ? {
+                    id: userMap.get(r.reviewerId)!.id,
+                    name: userMap.get(r.reviewerId)!.name,
+                    avatarUrl: userMap.get(r.reviewerId)!.avatarUrl,
+                    role: userMap.get(r.reviewerId)!.role,
+                } : { id: r.reviewerId, name: 'Unknown' },
                 createdAt: r.createdAt,
             })),
             comments: comments.map((c: any) => ({
                 id: c.id,
                 content: c.content,
-                author: authorMap.get(c.authorId) || { id: c.authorId, name: 'Unknown' },
+                author: userMap.get(c.authorId) ? {
+                    id: userMap.get(c.authorId)!.id,
+                    name: userMap.get(c.authorId)!.name,
+                    avatarUrl: userMap.get(c.authorId)!.avatarUrl,
+                    role: userMap.get(c.authorId)!.role,
+                } : { id: c.authorId, name: 'Unknown' },
                 createdAt: c.createdAt,
             })),
+
+            // Progress summary
             progressSummary: {
                 deliverablesSubmitted: `${deliverablesSubmitted} of ${deliverablesTotal} completed`,
                 deliverablesSubmittedCount: deliverablesSubmitted,

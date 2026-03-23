@@ -345,6 +345,7 @@ model ProjectSprint {
   payment         SprintPayment?
   reviews         SprintReview[]
   comments        SprintComment[]
+  activities      SprintActivity[]
 }
 
 // ────────── NEW MODELS for Client Dashboard ──────────
@@ -373,6 +374,7 @@ model SprintDeliverable {
   fileSize     String?           // e.g., "2.4 MB"
   commitCount  Int?              // For GitHub repositories
   status       DeliverableStatus @default(PENDING)
+  authorId     String?           // User who uploaded/submitted this deliverable
   submittedAt  DateTime?
   reviewedAt   DateTime?
   createdAt    DateTime          @default(now())
@@ -411,6 +413,16 @@ model SprintComment {
   content      String        @db.Text
   createdAt    DateTime      @default(now())
   updatedAt    DateTime      @updatedAt
+}
+
+model SprintActivity {
+  id           String        @id @default(cuid())
+  sprintId     String
+  sprint       ProjectSprint @relation(fields: [sprintId], references: [id], onDelete: Cascade)
+  type         String        // SPRINT_STARTED, DELIVERABLE_SUBMITTED, SPRINT_READY_FOR_REVIEW, SPRINT_APPROVED, CHANGE_REQUESTED, COMMENT_ADDED, OBJECTIVE_COMPLETED, SPRINT_COMPLETED
+  description  String
+  actorId      String?       // User who performed the action (null for system events)
+  createdAt    DateTime      @default(now())
 }
 
 // ────────────────── EXISTING MODELS (unchanged) ──────────────────
