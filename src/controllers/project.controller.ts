@@ -62,17 +62,28 @@ export const createProject = asyncHandler(async (req: AuthRequest, res: Response
         throw new AppError('You have reached the maximum limit of 3 projects. Please contact support or delete an existing pending project to submit a new one.', 400);
     }
 
-    const data = req.body as ProjectInput;
+    const data = req.body as any;
 
     const project = await prisma.project.create({
-        data: cleanData({
-            ...data,
-            budgetRange: mapBudget(data.budgetRange),
-            timeline: mapTimeline(data.timeline),
-            clientId: userId,
-            category: data.category,
-            categoryData: data.categoryData || {},
-        }) as any,
+        data: {
+            ...cleanData({
+                ...data,
+                budgetRange: mapBudget(data.budgetRange),
+                timeline: mapTimeline(data.timeline),
+                clientId: userId,
+                category: data.category,
+                categoryData: data.categoryData || {},
+            }),
+            ...(data.briefUrl ? {
+                documents: {
+                    create: [{
+                        title: data.briefName || 'Project Brief',
+                        url: data.briefUrl,
+                        type: 'DOC',
+                    }]
+                }
+            } : {})
+        } as any,
     });
 
     res.status(201).json({

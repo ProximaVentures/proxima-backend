@@ -323,6 +323,8 @@ const swaggerDocument = {
                                     budgetRange: { type: 'string', enum: ["<5k", "5k-10k", "10k-25k", "25k-50k", "50k+"] },
                                     timeline: { type: 'string', enum: ["<1_month", "1-3_months", "3-6_months", "6_months+"] },
                                     coverImageUrl: { type: 'string', format: 'url' },
+                                    briefUrl: { type: 'string', format: 'url' },
+                                    briefName: { type: 'string' },
                                     category: { type: 'string', minLength: 2 },
                                     categoryData: { type: 'object', additionalProperties: true }
                                 },
