@@ -314,17 +314,19 @@ const swaggerDocument = {
                             schema: {
                                 type: 'object',
                                 properties: {
-                                    title: { type: 'string' },
-                                    description: { type: 'string' },
-                                    targetAudience: { type: 'string' },
-                                    industry: { type: 'array', items: { type: 'string' } },
-                                    requirements: { type: 'string' },
+                                    title: { type: 'string', minLength: 5 },
+                                    description: { type: 'string', minLength: 50 },
+                                    targetAudience: { type: 'string', minLength: 1 },
+                                    industry: { type: 'array', items: { type: 'string' }, minItems: 1 },
+                                    requirements: { type: 'string', minLength: 20 },
                                     specificNotes: { type: 'string' },
-                                    budgetRange: { type: 'string', enum: ["FROM_5K_TO_10K", "FROM_10K_TO_25K", "FROM_25K_TO_50K", "ABOVE_50K", "LESS_THAN_5K"] },
-                                    timeline: { type: 'string', enum: ["LESS_THAN_1_MONTH", "FROM_1_TO_3_MONTHS", "FROM_3_TO_6_MONTHS", "ABOVE_6_MONTHS"] },
-                                    coverImageUrl: { type: 'string', format: 'url' }
+                                    budgetRange: { type: 'string', enum: ["<5k", "5k-10k", "10k-25k", "25k-50k", "50k+"] },
+                                    timeline: { type: 'string', enum: ["<1_month", "1-3_months", "3-6_months", "6_months+"] },
+                                    coverImageUrl: { type: 'string', format: 'url' },
+                                    category: { type: 'string', minLength: 2 },
+                                    categoryData: { type: 'object', additionalProperties: true }
                                 },
-                                required: ['title', 'description', 'targetAudience', 'industry', 'requirements', 'budgetRange', 'timeline']
+                                required: ['title', 'description', 'targetAudience', 'industry', 'requirements', 'budgetRange', 'timeline', 'category']
                             }
                         }
                     }
@@ -358,15 +360,17 @@ const swaggerDocument = {
                             schema: {
                                 type: 'object',
                                 properties: {
-                                    title: { type: 'string' },
-                                    description: { type: 'string' },
-                                    targetAudience: { type: 'string' },
-                                    industry: { type: 'array', items: { type: 'string' } },
-                                    requirements: { type: 'string' },
+                                    title: { type: 'string', minLength: 5 },
+                                    description: { type: 'string', minLength: 50 },
+                                    targetAudience: { type: 'string', minLength: 1 },
+                                    industry: { type: 'array', items: { type: 'string' }, minItems: 1 },
+                                    requirements: { type: 'string', minLength: 20 },
                                     specificNotes: { type: 'string' },
-                                    budgetRange: { type: 'string' },
-                                    timeline: { type: 'string' },
-                                    coverImageUrl: { type: 'string', format: 'url' }
+                                    budgetRange: { type: 'string', enum: ["<5k", "5k-10k", "10k-25k", "25k-50k", "50k+"] },
+                                    timeline: { type: 'string', enum: ["<1_month", "1-3_months", "3-6_months", "6_months+"] },
+                                    coverImageUrl: { type: 'string', format: 'url' },
+                                    category: { type: 'string', minLength: 2 },
+                                    categoryData: { type: 'object', additionalProperties: true }
                                 }
                             }
                         }

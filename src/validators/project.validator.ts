@@ -4,7 +4,7 @@ import { z } from 'zod';
 export const projectSchema = z.object({
     title: z.string().min(5, "Project title must be at least 5 characters"),
     description: z.string().min(50, "Please provide a detailed description (min 50 chars)"),
-    targetAudience: z.string().min(10, "Target audience or goal description is required"),
+    targetAudience: z.string().min(1, "Target audience or goal description is required"),
     industry: z.array(z.string()).min(1, "Select at least one industry/domain"),
     requirements: z.string().min(20, "List the core requirements or deliverables"),
     specificNotes: z.string().optional(),
