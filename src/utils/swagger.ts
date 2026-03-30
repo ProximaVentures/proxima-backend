@@ -314,27 +314,40 @@ const swaggerDocument = {
                             schema: {
                                 type: 'object',
                                 properties: {
-                                    title: { type: 'string', minLength: 5 },
-                                    description: { type: 'string', minLength: 50 },
-                                    targetAudience: { type: 'string', minLength: 1 },
-                                    industry: { type: 'array', items: { type: 'string' }, minItems: 1 },
-                                    requirements: { type: 'string', minLength: 20 },
-                                    specificNotes: { type: 'string' },
-                                    budgetRange: { type: 'string', enum: ["<5k", "5k-10k", "10k-25k", "25k-50k", "50k+"] },
-                                    timeline: { type: 'string', enum: ["<1_month", "1-3_months", "3-6_months", "6_months+"] },
-                                    coverImageUrl: { type: 'string', format: 'url' },
-                                    briefUrl: { type: 'string', format: 'url' },
-                                    briefName: { type: 'string' },
-                                    category: { type: 'string', minLength: 2 },
-                                    categoryData: { type: 'object', additionalProperties: true }
+                                    title: { type: 'string', minLength: 5, example: 'E-commerce Platform for Organic Skincare Brand' },
+                                    description: { type: 'string', minLength: 50, example: 'We are looking to build a modern, responsive e-commerce platform for our organic skincare brand. The website needs product listings, shopping cart, secure checkout with Stripe integration, user accounts, order tracking, and an admin panel for managing inventory and orders.' },
+                                    targetAudience: { type: 'string', minLength: 1, example: 'Consumers' },
+                                    industry: { type: 'array', items: { type: 'string' }, minItems: 1, example: ['E-commerce', 'Health'] },
+                                    requirements: { type: 'string', minLength: 20, example: 'User authentication, product catalog, shopping cart, Stripe payment integration, order management dashboard, mobile-responsive design, SEO optimization' },
+                                    specificNotes: { type: 'string', example: 'Prefer a clean, minimalist design with earthy tones. Must support both English and French languages.' },
+                                    budgetRange: { type: 'string', enum: ['<5k', '5k-10k', '10k-25k', '25k-50k', '50k+'], example: '5k-10k' },
+                                    timeline: { type: 'string', enum: ['<1_month', '1-3_months', '3-6_months', '6_months+'], example: '1-3_months' },
+                                    coverImageUrl: { type: 'string', format: 'url', example: 'https://res.cloudinary.com/demo/image/upload/sample.jpg' },
+                                    briefUrl: { type: 'string', format: 'url', example: 'https://res.cloudinary.com/demo/raw/upload/project_brief.pdf' },
+                                    briefName: { type: 'string', example: 'Skincare_Brand_Brief.pdf' },
+                                    category: { type: 'string', minLength: 2, example: 'Software Development' },
+                                    categoryData: { type: 'object', additionalProperties: true, example: {} }
                                 },
                                 required: ['title', 'description', 'targetAudience', 'industry', 'requirements', 'budgetRange', 'timeline', 'category']
+                            },
+                            example: {
+                                title: 'E-commerce Platform for Organic Skincare Brand',
+                                description: 'We are looking to build a modern, responsive e-commerce platform for our organic skincare brand. The website needs product listings, shopping cart, secure checkout with Stripe integration, user accounts, order tracking, and an admin panel for managing inventory and orders.',
+                                targetAudience: 'Consumers',
+                                industry: ['E-commerce', 'Health'],
+                                requirements: 'User authentication, product catalog, shopping cart, Stripe payment integration, order management dashboard, mobile-responsive design, SEO optimization',
+                                specificNotes: 'Prefer a clean, minimalist design with earthy tones.',
+                                budgetRange: '5k-10k',
+                                timeline: '1-3_months',
+                                category: 'Software Development',
+                                categoryData: {}
                             }
                         }
                     }
                 },
                 responses: {
                     201: { description: 'Project created successfully' },
+                    400: { description: 'Validation error or project limit reached (max 3)' },
                     401: { description: 'Unauthorized' }
                 }
             }
@@ -388,9 +401,18 @@ const swaggerDocument = {
             get: {
                 summary: 'Check Project Title Availability',
                 tags: ['Projects'],
-                parameters: [{ in: 'query', name: 'title', required: true, schema: { type: 'string' } }],
+                security: [{ bearerAuth: [] }],
+                parameters: [{ in: 'query', name: 'title', required: true, schema: { type: 'string', example: 'E-commerce Platform for Organic Skincare Brand' }, description: 'The project title to check' }],
                 responses: {
-                    200: { description: 'Availability status returned' }
+                    200: {
+                        description: 'Returns { success: true, available: true/false }',
+                        content: {
+                            'application/json': {
+                                example: { success: true, available: true }
+                            }
+                        }
+                    },
+                    400: { description: 'Title query parameter is required' }
                 }
             }
         },
