@@ -64,16 +64,25 @@ export const createProject = asyncHandler(async (req: AuthRequest, res: Response
 
     const data = req.body as any;
 
+    // Only pick fields that exist on the Project model to prevent Prisma errors
+    const projectData = cleanData({
+        title: data.title,
+        description: data.description,
+        targetAudience: data.targetAudience,
+        industry: data.industry,
+        requirements: data.requirements,
+        specificNotes: data.specificNotes,
+        budgetRange: mapBudget(data.budgetRange),
+        timeline: mapTimeline(data.timeline),
+        coverImageUrl: data.coverImageUrl,
+        category: data.category,
+        categoryData: data.categoryData || {},
+        clientId: userId,
+    });
+
     const project = await prisma.project.create({
         data: {
-            ...cleanData({
-                ...data,
-                budgetRange: mapBudget(data.budgetRange),
-                timeline: mapTimeline(data.timeline),
-                clientId: userId,
-                category: data.category,
-                categoryData: data.categoryData || {},
-            }),
+            ...projectData,
             ...(data.briefUrl ? {
                 documents: {
                     create: [{
