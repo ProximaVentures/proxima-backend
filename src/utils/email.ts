@@ -1,8 +1,12 @@
 import { Resend } from 'resend';
 import 'dotenv/config';
 
-// Initialize Resend Client
-const resend = new Resend(process.env.RESEND_API_KEY);
+// Lazy-initialize Resend client so it doesn't throw at import time (e.g. tests)
+let _resend: Resend | null = null;
+const getResend = () => {
+    if (!_resend) _resend = new Resend(process.env.RESEND_API_KEY || '');
+    return _resend;
+};
 
 /**
  * Generic Email Sender via Resend API
@@ -18,7 +22,7 @@ export const sendEmail = async (to: string, subject: string, html: string) => {
   console.log(`[📩 SENDING EMAIL]: to: ${to}, subject: ${subject}, from: ${fromValue}`);
 
   try {
-    const { data, error } = await resend.emails.send({
+    const { data, error } = await getResend().emails.send({
       from: `Proven <${fromValue}>`,
       to,
       subject,

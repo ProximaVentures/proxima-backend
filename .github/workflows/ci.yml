@@ -67,6 +67,8 @@ jobs:
           DATABASE_URL: postgresql://testuser:testpassword@localhost:5432/testdb
           REDIS_URL: redis://localhost:6379
           JWT_SECRET: ci_test_secret_key_12345
+          RESEND_API_KEY: re_test_dummy_key_for_ci
+          EMAIL_FROM: onboarding@resend.dev
 
       - name: Verify Docker Build
         run: docker build -t proven-backend:latest .
