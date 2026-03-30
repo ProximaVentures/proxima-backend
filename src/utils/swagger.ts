@@ -314,33 +314,22 @@ const swaggerDocument = {
                             schema: {
                                 type: 'object',
                                 properties: {
-                                    title: { type: 'string', minLength: 5, example: 'E-commerce Platform for Organic Skincare Brand' },
-                                    description: { type: 'string', minLength: 50, example: 'We are looking to build a modern, responsive e-commerce platform for our organic skincare brand. The website needs product listings, shopping cart, secure checkout with Stripe integration, user accounts, order tracking, and an admin panel for managing inventory and orders.' },
-                                    targetAudience: { type: 'string', minLength: 1, example: 'Consumers' },
-                                    industry: { type: 'array', items: { type: 'string' }, minItems: 1, example: ['E-commerce', 'Health'] },
-                                    requirements: { type: 'string', minLength: 20, example: 'User authentication, product catalog, shopping cart, Stripe payment integration, order management dashboard, mobile-responsive design, SEO optimization' },
-                                    specificNotes: { type: 'string', example: 'Prefer a clean, minimalist design with earthy tones. Must support both English and French languages.' },
-                                    budgetRange: { type: 'string', enum: ['<5k', '5k-10k', '10k-25k', '25k-50k', '50k+'], example: '5k-10k' },
+                                    title: { type: 'string', minLength: 5, example: 'E-commerce website for an organic skincare brand' },
+                                    description: { type: 'string', minLength: 50, example: 'We are looking to create a modern, clean e-commerce platform that showcases our organic skincare products. The website should emphasize our brand values of sustainability and natural ingredients.' },
+                                    targetAudience: { type: 'string', example: 'Consumers' },
                                     timeline: { type: 'string', enum: ['<1_month', '1-3_months', '3-6_months', '6_months+'], example: '1-3_months' },
-                                    coverImageUrl: { type: 'string', format: 'url', example: 'https://res.cloudinary.com/demo/image/upload/sample.jpg' },
+                                    specificNotes: { type: 'string', example: 'Please reference our current brand guidelines document for color palette and typography preferences.' },
                                     briefUrl: { type: 'string', format: 'url', example: 'https://res.cloudinary.com/demo/raw/upload/project_brief.pdf' },
-                                    briefName: { type: 'string', example: 'Skincare_Brand_Brief.pdf' },
-                                    category: { type: 'string', minLength: 2, example: 'Software Development' },
-                                    categoryData: { type: 'object', additionalProperties: true, example: {} }
+                                    briefName: { type: 'string', example: 'Project_Brief_Skincare.pdf' },
                                 },
-                                required: ['title', 'description', 'targetAudience', 'industry', 'requirements', 'budgetRange', 'timeline', 'category']
+                                required: ['title', 'description', 'targetAudience', 'timeline']
                             },
                             example: {
-                                title: 'E-commerce Platform for Organic Skincare Brand',
-                                description: 'We are looking to build a modern, responsive e-commerce platform for our organic skincare brand. The website needs product listings, shopping cart, secure checkout with Stripe integration, user accounts, order tracking, and an admin panel for managing inventory and orders.',
+                                title: 'E-commerce website for an organic skincare brand',
+                                description: 'We are looking to create a modern, clean e-commerce platform that showcases our organic skincare products. The website should emphasize our brand values of sustainability and natural ingredients.',
                                 targetAudience: 'Consumers',
-                                industry: ['E-commerce', 'Health'],
-                                requirements: 'User authentication, product catalog, shopping cart, Stripe payment integration, order management dashboard, mobile-responsive design, SEO optimization',
-                                specificNotes: 'Prefer a clean, minimalist design with earthy tones.',
-                                budgetRange: '5k-10k',
                                 timeline: '1-3_months',
-                                category: 'Software Development',
-                                categoryData: {}
+                                specificNotes: 'Please reference our current brand guidelines document for color palette and typography preferences.'
                             }
                         }
                     }

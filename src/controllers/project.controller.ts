@@ -64,25 +64,21 @@ export const createProject = asyncHandler(async (req: AuthRequest, res: Response
 
     const data = req.body as any;
 
-    // Only pick fields that exist on the Project model to prevent Prisma errors
-    const projectData = cleanData({
-        title: data.title,
-        description: data.description,
-        targetAudience: data.targetAudience,
-        industry: data.industry,
-        requirements: data.requirements,
-        specificNotes: data.specificNotes,
-        budgetRange: mapBudget(data.budgetRange),
-        timeline: mapTimeline(data.timeline),
-        coverImageUrl: data.coverImageUrl,
-        category: data.category,
-        categoryData: data.categoryData || {},
-        clientId: userId,
-    });
-
     const project = await prisma.project.create({
         data: {
-            ...projectData,
+            title: data.title,
+            description: data.description,
+            targetAudience: data.targetAudience,
+            timeline: mapTimeline(data.timeline),
+            specificNotes: data.specificNotes || null,
+            // DB-required fields not in the form — set sensible defaults
+            industry: [],
+            requirements: data.specificNotes || 'See project documentation',
+            budgetRange: BudgetTier.UNDER_5K,
+            category: 'General',
+            categoryData: {},
+            clientId: userId,
+            // Create document record if a brief was uploaded
             ...(data.briefUrl ? {
                 documents: {
                     create: [{
@@ -178,14 +174,14 @@ export const updateProject = asyncHandler(async (req: AuthRequest, res: Response
         throw new AppError('You are not authorized to update this project', 403);
     }
 
-    const data = req.body as Partial<ProjectInput>;
+    const data = req.body as any;
 
     // Handle map budget and timeline if they are present
     // Remove undefined values to please Prisma types
     const updateData: any = {};
 
     Object.keys(data).forEach(key => {
-        const value = data[key as keyof ProjectInput];
+        const value = data[key];
         if (value !== undefined) {
             updateData[key] = value;
         }
