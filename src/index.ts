@@ -15,10 +15,20 @@ import notificationRoutes from './routes/notification.routes.js';
 import professionalRoutes from './routes/professional.routes.js';
 import sprintRoutes from './routes/sprint.routes.js';
 import clientDashboardRoutes from './routes/client-dashboard.routes.js';
+import chatRoutes from './routes/chat.routes.js';
 import { setupSwagger } from './utils/swagger.js';
+
+import { createServer } from 'http';
+import SocketService from './socket/socket.service.js';
 
 const app = express();
 const PORT = process.env.PORT || 5000;
+
+// Create HTTP server for Socket.io integration
+const httpServer = createServer(app);
+
+// Initialize Socket.io Engine
+SocketService.initialize(httpServer);
 
 app.set('trust proxy', 1); // Trust first proxy (Render/Vercel)
 
@@ -124,6 +134,7 @@ app.use('/api/notifications', notificationRoutes);
 app.use('/api/professional', professionalRoutes);
 app.use('/api', sprintRoutes);
 app.use('/api/client', clientDashboardRoutes);
+app.use('/api/chat', chatRoutes);
 
 // SWAGGER DOCS - Setup before listen so it's available immediately
 setupSwagger(app);
@@ -132,7 +143,7 @@ setupSwagger(app);
 app.use(errorHandler);
 
 if (process.env.NODE_ENV !== 'test') {
-    app.listen(PORT, () => {
+    httpServer.listen(PORT, () => {
         console.log(`ProVen API Server running on http://localhost:${PORT}`);
     });
 }
