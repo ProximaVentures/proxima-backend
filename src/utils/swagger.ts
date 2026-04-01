@@ -15,6 +15,16 @@ const swaggerDocument = {
         version: '2.0.0',
         description: 'API Documentation for ProVen Vetting System — includes Client Dashboard & Sprint Management endpoints',
     },
+    tags: [
+        { name: 'Authentication', description: 'User login and registration' },
+        { name: 'Chat', description: 'Real-time messaging and conversation management' },
+        { name: 'Projects', description: 'Manage projects and missions' },
+        { name: 'Profile', description: 'Manage user profiles' },
+        { name: 'Admin', description: 'Admin operations' },
+        { name: 'Client Dashboard', description: 'Client-specific dashboard data' },
+        { name: 'Professional Workspace', description: 'Professional task and mission management' },
+        { name: 'Admin Workspace', description: 'Admin-level project and task oversight' }
+    ],
     servers: [
         {
             url: '/',
@@ -1569,6 +1579,73 @@ const swaggerDocument = {
                     200: { description: 'Progress stats with breakdown by sprints, objectives, deliverables, tasks, and budget' },
                     403: { description: 'Unauthorized' },
                     404: { description: 'Project not found' }
+                }
+            }
+        },
+
+        // ════════════════════════════════════════════════════════
+        //  CHAT — Messaging & Conversations
+        // ════════════════════════════════════════════════════════
+        '/api/chat/conversations': {
+            get: {
+                summary: 'Get all conversations for current user',
+                tags: ['Chat'],
+                security: [{ bearerAuth: [] }],
+                responses: {
+                    200: { description: 'List of conversations with last message and participants' }
+                }
+            }
+        },
+        '/api/chat/conversations/{conversationId}/messages': {
+            get: {
+                summary: 'Fetch message history for a conversation',
+                tags: ['Chat'],
+                security: [{ bearerAuth: [] }],
+                parameters: [
+                    {
+                        in: 'path',
+                        name: 'conversationId',
+                        required: true,
+                        schema: { type: 'string' }
+                    },
+                    {
+                        in: 'query',
+                        name: 'cursor',
+                        schema: { type: 'string' },
+                        description: 'Message ID to start pagination from'
+                    },
+                    {
+                        in: 'query',
+                        name: 'limit',
+                        schema: { type: 'integer', default: 20 }
+                    }
+                ],
+                responses: {
+                    200: { description: 'Array of messages in chronological order' }
+                }
+            }
+        },
+        '/api/chat/conversations/private': {
+            post: {
+                summary: 'Start a 1-on-1 private chat',
+                tags: ['Chat'],
+                security: [{ bearerAuth: [] }],
+                requestBody: {
+                    required: true,
+                    content: {
+                        'application/json': {
+                            schema: {
+                                type: 'object',
+                                required: ['receiverId'],
+                                properties: {
+                                    receiverId: { type: 'string' }
+                                }
+                            }
+                        }
+                    }
+                },
+                responses: {
+                    200: { description: 'Existing or newly created conversation' }
                 }
             }
         }

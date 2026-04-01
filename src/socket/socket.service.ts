@@ -95,9 +95,9 @@ class SocketService {
         });
 
         // Send Message
-        socket.on(SocketEvents.MESSAGE_SEND, async (data: { conversationId: string; content: string; type?: MessageType; tempId?: string }) => {
+        socket.on(SocketEvents.MESSAGE_SEND, async (data: { conversationId: string; content?: string; type?: MessageType; tempId?: string; replyToId?: string; fileUrl?: string; fileName?: string; fileSize?: string }) => {
             try {
-                const { conversationId, content, type = MessageType.TEXT, tempId } = data;
+                const { conversationId, content, type = MessageType.TEXT, tempId, replyToId, fileUrl, fileName, fileSize } = data;
 
                 // A. Validate Participation (Security Check)
                 const isParticipant = await prisma.conversationParticipant.findFirst({
@@ -115,8 +115,12 @@ class SocketService {
                         data: {
                             conversationId,
                             senderId: userId,
-                            content,
+                            content: content || '',
                             type: type as MessageType,
+                            replyToId: replyToId || null,
+                            fileUrl: fileUrl || null,
+                            fileName: fileName || null,
+                            fileSize: fileSize || null
                         },
                         include: {
                             sender: {
@@ -125,6 +129,16 @@ class SocketService {
                                     email: true,
                                     profile: {
                                         select: { firstName: true, lastName: true, avatarUrl: true }
+                                    }
+                                }
+                            },
+                            replyTo: {
+                                include: {
+                                    sender: {
+                                        select: {
+                                            id: true,
+                                            profile: { select: { firstName: true, avatarUrl: true } }
+                                        }
                                     }
                                 }
                             }
@@ -143,11 +157,27 @@ class SocketService {
                     return msg;
                 });
 
-                // D. Emit to the room (Real-time Broadcast)
+                // D. Fetch all participants to ensure the message reaches them
+                const participants = await prisma.conversationParticipant.findMany({
+                    where: { conversationId },
+                    select: { userId: true }
+                });
+
+                // E. Emit to the conversation room (for those actively viewing it)
                 this._io?.to(`chat:${conversationId}`).emit(SocketEvents.MESSAGE_RECEIVED, {
                     ...message,
-                    tempId // Echo tempId for frontend UI reconciliation
+                    tempId
                 });
+
+                // F. Emit to each participant's private room (to trigger unread counts/notifications globally)
+                for (const p of participants) {
+                    if (p.userId !== userId) {
+                        this._io?.to(`user:${p.userId}`).emit(SocketEvents.MESSAGE_RECEIVED, {
+                            ...message,
+                            isNewForUser: true 
+                        });
+                    }
+                }
 
             } catch (err: any) {
                 console.error('[🚨 SOCKET MESSAGE ERROR]:', err.message);

@@ -1,4 +1,4 @@
-// Forced restart to pick up Prisma schema changes
+// Forced restart to pick up new Prisma Client with 'replyTo' field.
 import 'dotenv/config';
 import { PrismaClient } from '@prisma/client';
 import { PrismaPg } from '@prisma/adapter-pg';

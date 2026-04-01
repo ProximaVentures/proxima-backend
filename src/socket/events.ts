@@ -21,6 +21,10 @@ export const SocketEvents = {
     
     // System/Notifications
     NOTIFICATION_NEW: 'notification:new',
+    
+    // Meetings
+    MEETING_SCHEDULED: 'meeting:scheduled',
+    MEETING_CANCELLED: 'meeting:cancelled',
 } as const;
 
 export type SocketEventType = typeof SocketEvents[keyof typeof SocketEvents];

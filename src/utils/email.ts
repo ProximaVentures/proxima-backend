@@ -64,3 +64,55 @@ export const sendOTPEmail = async (to: string, otp: string) => {
     `;
   return await sendEmail(to, subject, html);
 };
+
+/**
+ * Sends a stylized Meeting Invitation email to the user.
+ */
+export const sendMeetingEmail = async (to: string, meetingTitle: string, startTime: Date, meetingLink: string) => {
+  const dateStr = startTime.toLocaleString('en-US', { 
+    weekday: 'long', 
+    year: 'numeric', 
+    month: 'long', 
+    day: 'numeric',
+    hour: '2-digit',
+    minute: '2-digit'
+  });
+  
+  const subject = `📅 New Meeting Scheduled: ${meetingTitle}`;
+  const html = `
+      <div style="font-family: sans-serif; max-width: 600px; margin: auto; padding: 30px; border: 1px solid #f1f1f1; border-radius: 16px; background-color: #ffffff;">
+        <div style="text-align: center; margin-bottom: 25px;">
+          <h1 style="color: #0F172A; font-size: 24px; font-weight: 800; margin-bottom: 8px;">Meeting Invitation</h1>
+          <p style="color: #64748B; font-size: 14px; margin-top: 0;">You've been invited to a session on Proven</p>
+        </div>
+        
+        <div style="background: #FFF7ED; padding: 25px; border-radius: 12px; border: 1px solid #FFEDD5; margin-bottom: 25px;">
+          <h2 style="color: #9A3412; font-size: 18px; font-weight: 700; margin-top: 0; border-bottom: 1px solid #FED7AA; padding-bottom: 12px; margin-bottom: 15px;">
+            ${meetingTitle}
+          </h2>
+          <div style="color: #431407; font-size: 15px; font-weight: 600; margin-bottom: 8px;">
+            📅 ${dateStr}
+          </div>
+          <div style="color: #7C2D12; font-size: 13px; font-weight: 500;">
+            Duration: 30-45 minutes
+          </div>
+        </div>
+
+        <div style="text-align: center;">
+          <a href="${meetingLink}" style="display: inline-block; background-color: #FF6B00; color: #ffffff; padding: 14px 28px; border-radius: 10px; font-weight: 700; text-decoration: none; font-size: 14px; transition: background-color 0.2s;">
+            Join Google Meet
+          </a>
+        </div>
+
+        <p style="color: #475569; font-size: 13px; line-height: 1.6; margin-top: 25px; text-align: center;">
+          Please join on time to ensure we cover all project objectives. If you need to reschedule, please contact the administrator in the chat.
+        </p>
+
+        <hr style="border: 0; border-top: 1px solid #f1f1f1; margin: 30px 0;" />
+        <p style="font-size: 11px; color: #94A3B8; text-align: center; font-weight: 600; text-transform: uppercase; letter-spacing: 1px;">
+          Powered by Proven Platform
+        </p>
+      </div>
+    `;
+  return await sendEmail(to, subject, html);
+};
