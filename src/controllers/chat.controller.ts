@@ -240,6 +240,11 @@ export const markAsRead = async (req: AuthRequest, res: Response) => {
         data: { isRead: true }
     });
 
+    // 3. Notify the user's sessions to refresh unread counts
+    const socketService = (await import('../socket/socket.service.js')).default;
+    const { SocketEvents } = await import('../socket/events.js');
+    socketService.notifyUser(userId, SocketEvents.MESSAGE_READ, { conversationId });
+
     res.status(200).json({ success: true });
 };
 
