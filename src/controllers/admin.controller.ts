@@ -1481,3 +1481,74 @@ export const deleteProjectInfo = asyncHandler(async (req: Request, res: Response
         message: 'Project info deleted successfully'
     });
 });
+
+/**
+ * Get Project By ID (Admin)
+ */
+export const getProjectById = asyncHandler(async (req: Request, res: Response) => {
+    const { id } = req.params as { id: string };
+
+    const project = await prisma.project.findUnique({
+        where: { id },
+        include: {
+            client: {
+                select: {
+                    id: true,
+                    email: true,
+                    username: true,
+                    profile: {
+                        select: {
+                            firstName: true,
+                            lastName: true,
+                            avatarUrl: true
+                        }
+                    }
+                }
+            },
+            assignments: {
+                include: {
+                    user: {
+                        select: {
+                            id: true,
+                            email: true,
+                            username: true,
+                            profile: {
+                                select: {
+                                    firstName: true,
+                                    lastName: true,
+                                    avatarUrl: true,
+                                    category: true
+                                }
+                            }
+                        }
+                    }
+                }
+            },
+            documents: {
+                orderBy: { createdAt: 'desc' }
+            },
+            _count: {
+                select: {
+                    assignments: {
+                        where: { status: 'INTERESTED' }
+                    }
+                }
+            }
+        }
+    });
+
+    if (!project) {
+        throw new AppError('Project not found', 404);
+    }
+
+    // Map project to include interestsCount for frontend consistency
+    const projectWithCount = {
+        ...project,
+        interestsCount: project._count?.assignments || 0
+    };
+
+    res.status(200).json({
+        success: true,
+        data: projectWithCount
+    });
+});

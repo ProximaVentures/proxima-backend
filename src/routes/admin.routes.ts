@@ -23,6 +23,7 @@ router.get('/professionals/:id', adminController.getProfessionalById);
 
 // Project Management
 router.get('/projects', adminController.getAllProjects);
+router.get('/projects/:id', adminController.getProjectById);
 router.get('/projects/:id/interests', adminController.getProjectInterests);
 router.patch('/projects/:id/status', adminController.updateProjectStatus);
 router.post('/projects/:id/assign', adminController.assignProfessional);

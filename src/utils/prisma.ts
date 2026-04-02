@@ -29,4 +29,26 @@ const prisma = new PrismaClient({
     log: process.env.NODE_ENV === 'development' ? ['error', 'warn'] : ['error']
 });
 
+// Implementation of a graceful shutdown procedure for both Prisma and pg pool
+const performGracefulShutdown = async (signal: string) => {
+    console.log(`[🔌 ${signal} RECEIVED]: Initiating graceful database shutdown...`);
+
+    try {
+        await prisma.$disconnect();
+        console.log('[✅ PRISMA]: Disconnected gracefully');
+
+        await pool.end();
+        console.log('[✅ DB POOL]: Pool connections closed successfully');
+
+        process.exit(0);
+    } catch (err: any) {
+        console.error('[🚨 SHUTDOWN ERROR]:', err.message);
+        process.exit(1);
+    }
+};
+
+// Listen for termination signals
+process.on('SIGTERM', () => performGracefulShutdown('SIGTERM'));
+process.on('SIGINT', () => performGracefulShutdown('SIGINT'));
+
 export default prisma;
