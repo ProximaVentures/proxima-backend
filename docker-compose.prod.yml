@@ -1,5 +1,4 @@
 # 🚀 ProVen Production Orchestration
-version: '3.8'
 
 services:
   backend:
