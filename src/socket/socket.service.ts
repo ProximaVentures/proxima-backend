@@ -35,9 +35,14 @@ class SocketService {
             return this._io;
         }
 
+        // 🛡️ SECURITY: Restrict CORS to allowed origins in production
+        const allowedOrigins = process.env.CORS_ORIGINS
+            ? process.env.CORS_ORIGINS.split(',').map(o => o.trim())
+            : ['http://localhost:3000', 'http://localhost:5000'];
+
         this._io = new Server(httpServer, {
             cors: {
-                origin: '*', // We handle CORS at the Express layer, but Socket.io needs its own config
+                origin: process.env.NODE_ENV === 'production' ? allowedOrigins : '*',
                 methods: ['GET', 'POST'],
                 credentials: true
             },
@@ -76,21 +81,36 @@ class SocketService {
         // 2. Set Status in Redis (Fast Presence Cache)
         await redis.set(`user:status:${userId}`, 'online', 'EX', 3600 * 24); // Expires in 24h
         
-        // 3. Broadcast Online Status (Optional: Notify friends/participants)
+        // 3. Broadcast Online Status
         socket.broadcast.emit(SocketEvents.USER_ONLINE, { userId });
 
         console.log(`[⚡ SOCKET]: User ${userId} connected and joined private room.`);
 
         // --- Core Messaging Events ---
 
-        // Join Conversation
-        socket.on(SocketEvents.JOIN_CONVERSATION, (conversationId: string) => {
-            socket.join(`chat:${conversationId}`);
-            console.log(`[⚡ SOCKET]: User ${userId} joined conversation ${conversationId}`);
+        // 🛡️ SECURITY: Validate participation before joining a conversation room
+        socket.on(SocketEvents.JOIN_CONVERSATION, async (conversationId: string) => {
+            if (!conversationId || typeof conversationId !== 'string') return;
+
+            try {
+                const isParticipant = await prisma.conversationParticipant.findFirst({
+                    where: { conversationId, userId }
+                });
+
+                if (!isParticipant) {
+                    console.error(`[🚨 SOCKET SECURITY]: User ${userId} attempted to join unauthorized chat ${conversationId}.`);
+                    return socket.emit(SocketEvents.ERROR, { message: 'Unauthorized access.' });
+                }
+
+                socket.join(`chat:${conversationId}`);
+            } catch (err: any) {
+                console.error('[🚨 SOCKET JOIN ERROR]:', err.message);
+            }
         });
 
         // Leave Conversation
         socket.on(SocketEvents.LEAVE_CONVERSATION, (conversationId: string) => {
+            if (!conversationId || typeof conversationId !== 'string') return;
             socket.leave(`chat:${conversationId}`);
         });
 
@@ -99,13 +119,27 @@ class SocketService {
             try {
                 const { conversationId, content, type = MessageType.TEXT, tempId, replyToId, fileUrl, fileName, fileSize } = data;
 
+                // 🛡️ Input validation
+                if (!conversationId || typeof conversationId !== 'string') {
+                    return socket.emit(SocketEvents.ERROR, { message: 'Invalid conversation ID.' });
+                }
+
+                if (!content?.trim() && !fileUrl) {
+                    return socket.emit(SocketEvents.ERROR, { message: 'Message content or file is required.' });
+                }
+
+                // 🛡️ Content length limit (prevent abuse)
+                if (content && content.length > 10000) {
+                    return socket.emit(SocketEvents.ERROR, { message: 'Message content too long (max 10,000 characters).' });
+                }
+
                 // A. Validate Participation (Security Check)
                 const isParticipant = await prisma.conversationParticipant.findFirst({
                     where: { conversationId, userId }
                 });
 
                 if (!isParticipant) {
-                    console.error(`[🚨 SOCKET SECURITY]: User ${userId} tried to message unauthored chat ${conversationId}.`);
+                    console.error(`[🚨 SOCKET SECURITY]: User ${userId} tried to message unauthorized chat ${conversationId}.`);
                     return socket.emit(SocketEvents.ERROR, { message: 'Unauthorized access to this conversation.' });
                 }
 
@@ -115,7 +149,7 @@ class SocketService {
                         data: {
                             conversationId,
                             senderId: userId,
-                            content: content || '',
+                            content: content?.trim() || '',
                             type: type as MessageType,
                             replyToId: replyToId || null,
                             fileUrl: fileUrl || null,
@@ -185,12 +219,155 @@ class SocketService {
             }
         });
 
-        // Typing Indicators (Volatile)
+        // ── Edit Message ──────────────────────────────────────────────
+        socket.on(SocketEvents.MESSAGE_EDIT, async (data: { messageId: string; content: string }) => {
+            try {
+                const { messageId, content } = data;
+
+                if (!messageId || typeof messageId !== 'string') {
+                    return socket.emit(SocketEvents.ERROR, { message: 'Invalid message ID.' });
+                }
+
+                if (!content?.trim()) {
+                    return socket.emit(SocketEvents.ERROR, { message: 'Edited content cannot be empty.' });
+                }
+
+                if (content.length > 10000) {
+                    return socket.emit(SocketEvents.ERROR, { message: 'Message content too long.' });
+                }
+
+                // 🛡️ Only the sender can edit their own message
+                const message = await prisma.message.findUnique({
+                    where: { id: messageId },
+                    select: { id: true, senderId: true, conversationId: true, isDeleted: true }
+                });
+
+                if (!message) {
+                    return socket.emit(SocketEvents.ERROR, { message: 'Message not found.' });
+                }
+
+                if (message.senderId !== userId) {
+                    return socket.emit(SocketEvents.ERROR, { message: 'You can only edit your own messages.' });
+                }
+
+                if (message.isDeleted) {
+                    return socket.emit(SocketEvents.ERROR, { message: 'Cannot edit a deleted message.' });
+                }
+
+                // Update in DB
+                const updated = await prisma.message.update({
+                    where: { id: messageId },
+                    data: {
+                        content: content.trim(),
+                        isEdited: true
+                    },
+                    include: {
+                        sender: {
+                            select: {
+                                id: true,
+                                email: true,
+                                profile: { select: { firstName: true, lastName: true, avatarUrl: true } }
+                            }
+                        }
+                    }
+                });
+
+                // Broadcast to conversation room
+                this._io?.to(`chat:${message.conversationId}`).emit(SocketEvents.MESSAGE_EDITED, updated);
+
+                // Notify all participants in their private rooms
+                const participants = await prisma.conversationParticipant.findMany({
+                    where: { conversationId: message.conversationId },
+                    select: { userId: true }
+                });
+
+                for (const p of participants) {
+                    if (p.userId !== userId) {
+                        this._io?.to(`user:${p.userId}`).emit(SocketEvents.MESSAGE_EDITED, updated);
+                    }
+                }
+
+            } catch (err: any) {
+                console.error('[🚨 SOCKET EDIT ERROR]:', err.message);
+                socket.emit(SocketEvents.ERROR, { message: 'Failed to edit message.' });
+            }
+        });
+
+        // ── Delete Message ────────────────────────────────────────────
+        socket.on(SocketEvents.MESSAGE_DELETE, async (data: { messageId: string }) => {
+            try {
+                const { messageId } = data;
+
+                if (!messageId || typeof messageId !== 'string') {
+                    return socket.emit(SocketEvents.ERROR, { message: 'Invalid message ID.' });
+                }
+
+                // 🛡️ Only the sender can delete their own message
+                const message = await prisma.message.findUnique({
+                    where: { id: messageId },
+                    select: { id: true, senderId: true, conversationId: true, isDeleted: true }
+                });
+
+                if (!message) {
+                    return socket.emit(SocketEvents.ERROR, { message: 'Message not found.' });
+                }
+
+                if (message.senderId !== userId) {
+                    return socket.emit(SocketEvents.ERROR, { message: 'You can only delete your own messages.' });
+                }
+
+                if (message.isDeleted) {
+                    return; // Already deleted, no-op
+                }
+
+                // Soft delete — preserve referential integrity for replies
+                await prisma.message.update({
+                    where: { id: messageId },
+                    data: {
+                        isDeleted: true,
+                        content: '',
+                        fileUrl: null,
+                        fileName: null,
+                        fileSize: null
+                    }
+                });
+
+                const deletedPayload = {
+                    id: messageId,
+                    conversationId: message.conversationId,
+                    senderId: userId,
+                    isDeleted: true
+                };
+
+                // Broadcast to conversation room
+                this._io?.to(`chat:${message.conversationId}`).emit(SocketEvents.MESSAGE_DELETED, deletedPayload);
+
+                // Notify all participants
+                const participants = await prisma.conversationParticipant.findMany({
+                    where: { conversationId: message.conversationId },
+                    select: { userId: true }
+                });
+
+                for (const p of participants) {
+                    if (p.userId !== userId) {
+                        this._io?.to(`user:${p.userId}`).emit(SocketEvents.MESSAGE_DELETED, deletedPayload);
+                    }
+                }
+
+            } catch (err: any) {
+                console.error('[🚨 SOCKET DELETE ERROR]:', err.message);
+                socket.emit(SocketEvents.ERROR, { message: 'Failed to delete message.' });
+            }
+        });
+
+        // Typing Indicators (Volatile — no persistence needed)
         socket.on(SocketEvents.TYPING_START, (conversationId: string) => {
+            if (!conversationId || typeof conversationId !== 'string') return;
             socket.to(`chat:${conversationId}`).emit(SocketEvents.TYPING_START, { conversationId, userId });
         });
 
         socket.on(SocketEvents.TYPING_STOP, (conversationId: string) => {
+            if (!conversationId || typeof conversationId !== 'string') return;
             socket.to(`chat:${conversationId}`).emit(SocketEvents.TYPING_STOP, { conversationId, userId });
         });
 
@@ -204,8 +381,7 @@ class SocketService {
             // B. Broadcast Offline Status
             socket.broadcast.emit(SocketEvents.USER_OFFLINE, { userId });
 
-            // C. Auto-leave all rooms (Socket.io handles this, but we explicitly clear state if needed)
-            socket.rooms.clear();
+            // Socket.io automatically handles room cleanup on disconnect
         });
     }
 

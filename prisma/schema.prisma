@@ -536,6 +536,8 @@ model Message {
   replies        Message[]    @relation("MessageReplies")
 
   isRead         Boolean      @default(false)
+  isEdited       Boolean      @default(false)
+  isDeleted      Boolean      @default(false)
   
   createdAt      DateTime     @default(now())
   updatedAt      DateTime     @updatedAt

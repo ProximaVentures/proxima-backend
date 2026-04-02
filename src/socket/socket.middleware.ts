@@ -33,7 +33,11 @@ export const authenticateSocket = () => {
                 return next(new Error('Authentication failed: Missing token'));
             }
 
-            const secret = process.env.JWT_SECRET || 'secret';
+            const secret = process.env.JWT_SECRET;
+            if (!secret) {
+                console.error('[🚨 SOCKET AUTH]: JWT_SECRET environment variable is not set.');
+                return next(new Error('Authentication failed: Server misconfiguration'));
+            }
 
             // 2. Clear previous data to prevent leaks (standard practice in long-lived connections)
             socket.data.user = null;
