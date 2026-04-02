@@ -8,16 +8,19 @@ COPY package*.json ./
 COPY prisma ./prisma/
 
 # Install dependencies
-RUN npm install
+# Install dependencies with progress disabled for CI speed
+RUN npm ci --quiet
 
 # Copy source code
 COPY . .
 
-# Generate Prisma Client (Modern Prisma 7 style)
+# Generate Prisma Client
 RUN npx prisma generate
 
-# Build TypeScript to JavaScript
-RUN rm -rf dist && npm run build
+# Build TypeScript with performance tracing
+RUN echo "🏗️ [Build] Starting Compilation..." && \
+    node --max-old-space-size=2048 node_modules/typescript/bin/tsc && \
+    echo "✅ [Build] Compilation Finished."
 
 # 🐳 Stage 2: Run
 FROM node:20-alpine

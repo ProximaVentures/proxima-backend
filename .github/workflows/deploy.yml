@@ -28,4 +28,6 @@ jobs:
           key: ${{ secrets.SSH_PRIVATE_KEY }}
           script: |
             cd ~/proven/proven-backend
+            echo "🚀 [Deploy] Stopping & Building..."
             docker compose -f docker-compose.prod.yml up -d --build backend
+            echo "✅ [Deploy] Finished successfully."

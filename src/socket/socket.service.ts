@@ -36,9 +36,20 @@ class SocketService {
         }
 
         // 🛡️ SECURITY: Restrict CORS to allowed origins in production
-        const allowedOrigins = process.env.CORS_ORIGINS
-            ? process.env.CORS_ORIGINS.split(',').map(o => o.trim())
-            : ['http://localhost:3000', 'http://localhost:5000'];
+        const envOrigins = process.env.ALLOWED_ORIGINS || process.env.CORS_ORIGINS;
+        const defaultOrigins = [
+            'http://localhost:3000',
+            'http://localhost:5000',
+            'https://provenworld.com',
+            'https://www.provenworld.com',
+            'https://api.provenworld.com',
+            'https://proventures.vercel.app',
+            'https://proven-app.vercel.app'
+        ];
+        
+        const allowedOrigins = envOrigins
+            ? [...defaultOrigins, ...envOrigins.split(',').map(o => o.trim())]
+            : defaultOrigins;
 
         this._io = new Server(httpServer, {
             cors: {
