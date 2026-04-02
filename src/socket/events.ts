@@ -12,10 +12,6 @@ export const SocketEvents = {
     MESSAGE_SEND: 'message:send',
     MESSAGE_RECEIVED: 'message:received',
     MESSAGE_READ: 'message:read',
-    MESSAGE_EDIT: 'message:edit',
-    MESSAGE_EDITED: 'message:edited',
-    MESSAGE_DELETE: 'message:delete',
-    MESSAGE_DELETED: 'message:deleted',
     
     // Status/Presence
     USER_ONLINE: 'user:online',

@@ -169,7 +169,7 @@ export const startPrivateConversation = async (req: AuthRequest, res: Response) 
     const conversation = await prisma.conversation.create({
         data: {
             isGroup: false,
-            projectId: projectId || undefined,
+            ...(projectId ? { projectId } : {}),
             participants: {
                 create: [
                     { userId: senderId },
