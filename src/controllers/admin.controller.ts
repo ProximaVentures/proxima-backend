@@ -481,26 +481,28 @@ export const getAllUsers = asyncHandler(async (req: Request, res: Response) => {
     // 1. Role Filtering (Inclusive)
     if (roleQuery?.toUpperCase() === 'PROFESSIONAL') {
         filteredUsers = allUsers.filter(u => {
-            const hasProRole = u.role === 'PROFESSIONAL' || u.role === Role.PROFESSIONAL;
-            const rolesArray = Array.isArray(u.roles) ? u.roles : [];
-            const hasProInArray = rolesArray.some(r => String(r).toUpperCase() === 'PROFESSIONAL');
+            const roleStr = String(u.role || '').toUpperCase();
+            const rolesArr = (u.roles || []).map(r => String(r).toUpperCase());
+            const hasPro = roleStr === 'PROFESSIONAL' || rolesArr.includes('PROFESSIONAL');
             const isOnboarded = u.profile?.onboardingComplete === true;
             
-            return hasProRole || hasProInArray || isOnboarded;
+            return hasPro || isOnboarded;
         });
     } else if (roleQuery?.toUpperCase() === 'CLIENT') {
         filteredUsers = allUsers.filter(u => {
-            const hasClientRole = u.role === 'CLIENT' || u.role === Role.CLIENT;
-            const rolesArray = Array.isArray(u.roles) ? u.roles : [];
-            const hasClientInArray = rolesArray.some(r => String(r).toUpperCase() === 'CLIENT');
+            const roleStr = String(u.role || '').toUpperCase();
+            const rolesArr = (u.roles || []).map(r => String(r).toUpperCase());
+            const hasClient = roleStr === 'CLIENT' || rolesArr.includes('CLIENT');
             
-            return hasClientRole || hasClientInArray;
+            return hasClient;
         });
     } else if (roleQuery) {
-        filteredUsers = allUsers.filter(u => 
-            u.role === roleQuery || 
-            (u.roles && u.roles.some((r: any) => String(r).toUpperCase() === roleQuery.toUpperCase()))
-        );
+        const targetRole = roleQuery.toUpperCase();
+        filteredUsers = allUsers.filter(u => {
+            const roleStr = String(u.role || '').toUpperCase();
+            const rolesArr = (u.roles || []).map(r => String(r).toUpperCase());
+            return roleStr === targetRole || rolesArr.includes(targetRole);
+        });
     }
 
     // 2. Search Filtering
@@ -609,15 +611,18 @@ export const getUserStats = asyncHandler(async (req: Request, res: Response) => 
         include: { profile: { select: { onboardingComplete: true } } }
     });
 
-    const clientCount = usersForStats.filter(u => 
-        u.role === Role.CLIENT || (u.roles && u.roles.includes(Role.CLIENT))
-    ).length;
+    const clientCount = usersForStats.filter(u => {
+        const r = String(u.role || '').toUpperCase();
+        const arr = (u.roles || []).map(x => String(x).toUpperCase());
+        return r === 'CLIENT' || arr.includes('CLIENT');
+    }).length;
 
-    const professionalCount = usersForStats.filter(u => 
-        u.role === Role.PROFESSIONAL || 
-        (u.roles && u.roles.includes(Role.PROFESSIONAL)) || 
-        u.profile?.onboardingComplete === true
-    ).length;
+    const professionalCount = usersForStats.filter(u => {
+        const r = String(u.role || '').toUpperCase();
+        const arr = (u.roles || []).map(x => String(x).toUpperCase());
+        const onboarded = u.profile?.onboardingComplete === true;
+        return r === 'PROFESSIONAL' || arr.includes('PROFESSIONAL') || onboarded;
+    }).length;
 
     const [totalUsersCount, projectCount, pitchCount] = await Promise.all([
         prisma.user.count(),
