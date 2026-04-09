@@ -392,8 +392,8 @@ export const getProjectById = asyncHandler(async (req: AuthRequest, res: Respons
 
     // Authorization: Client owner, Admin, or Professional (if project is ACCEPTED or they are assigned)
     const isOwner = project.clientId === userId;
-    const isAdmin = req.user?.role === 'ADMIN';
-    const isProfessional = req.user?.role === 'PROFESSIONAL';
+    const isAdmin = req.user?.role === 'ADMIN' || req.user?.roles?.includes('ADMIN');
+    const isProfessional = req.user?.role === 'PROFESSIONAL' || req.user?.roles?.includes('PROFESSIONAL');
     
     // Check specific relations for the current user
     const userAssignment = project.assignments.find(a => a.userId === userId);
@@ -425,7 +425,8 @@ export const expressInterest = asyncHandler(async (req: AuthRequest, res: Respon
     const { role, note } = req.body;
 
     if (!userId) throw new AppError('Unauthorized', 401);
-    if (req.user?.role !== 'PROFESSIONAL') {
+    const isProfessionalUser = req.user?.role === 'PROFESSIONAL' || req.user?.roles?.includes('PROFESSIONAL');
+    if (!isProfessionalUser) {
         throw new AppError('Only professionals can express interest in projects', 403);
     }
 

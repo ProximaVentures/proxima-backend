@@ -161,7 +161,8 @@ export const startPrivateConversation = async (req: AuthRequest, res: Response) 
         }
     });
 
-    if (receiver?.role === 'CLIENT' && receiver.projects[0]) {
+    const isClient = receiver?.role === 'CLIENT' || (receiver?.roles && receiver.roles.includes('CLIENT'));
+    if (isClient && receiver?.projects[0]) {
         projectId = receiver.projects[0].id;
     }
 

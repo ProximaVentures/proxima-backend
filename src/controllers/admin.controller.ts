@@ -2,6 +2,7 @@ import type { Request, Response } from 'express';
 import { asyncHandler, AppError } from '../middleware/error.middleware.js';
 import prisma from '../utils/prisma.js';
 import { sendEmail } from '../utils/email.js';
+import { Role } from '@prisma/client';
 import type { AuthRequest } from '../interfaces/auth.interface.js';
 
 /**
@@ -452,7 +453,7 @@ export const assignProfessional = asyncHandler(async (req: Request, res: Respons
  * Fetch all users with role filtering and pagination.
  */
 export const getAllUsers = asyncHandler(async (req: Request, res: Response) => {
-    const role = typeof req.query.role === 'string' ? req.query.role : undefined;
+    const roleQuery = typeof req.query.role === 'string' ? req.query.role.toUpperCase() : undefined;
     const search = typeof req.query.search === 'string' ? req.query.search : undefined;
     const page = typeof req.query.page === 'string' ? parseInt(req.query.page) : 1;
     const limit = typeof req.query.limit === 'string' ? parseInt(req.query.limit) : 10;
@@ -462,16 +463,21 @@ export const getAllUsers = asyncHandler(async (req: Request, res: Response) => {
     const skip = (page - 1) * limit;
 
     const where: any = {};
-    if (role === 'PROFESSIONAL') {
+    if (roleQuery === 'PROFESSIONAL') {
         where.OR = [
-            { role: 'PROFESSIONAL' },
-            { roles: { has: 'PROFESSIONAL' } },
+            { role: Role.PROFESSIONAL },
+            { roles: { hasSome: [Role.PROFESSIONAL] } },
             { profile: { onboardingComplete: true } }
         ];
-    } else if (role) {
+    } else if (roleQuery === 'CLIENT') {
         where.OR = [
-            { role: role },
-            { roles: { has: role } }
+            { role: Role.CLIENT },
+            { roles: { hasSome: [Role.CLIENT] } }
+        ];
+    } else if (roleQuery) {
+        where.OR = [
+            { role: roleQuery as any },
+            { roles: { hasSome: [roleQuery as any] } }
         ];
     }
 
@@ -609,13 +615,13 @@ export const getProfessionalById = asyncHandler(async (req: Request, res: Respon
 export const getUserStats = asyncHandler(async (req: Request, res: Response) => {
     const [clientCount, professionalCount, totalUsersCount, projectCount, pitchCount] = await Promise.all([
         prisma.user.count({ 
-            where: { OR: [{ role: 'CLIENT' }, { roles: { has: 'CLIENT' } }] } 
+            where: { OR: [{ role: Role.CLIENT }, { roles: { hasSome: [Role.CLIENT] } }] } 
         }),
         prisma.user.count({ 
             where: { 
                 OR: [
-                    { role: 'PROFESSIONAL' }, 
-                    { roles: { has: 'PROFESSIONAL' } },
+                    { role: Role.PROFESSIONAL }, 
+                    { roles: { hasSome: [Role.PROFESSIONAL] } },
                     { profile: { onboardingComplete: true } }
                 ] 
             } 

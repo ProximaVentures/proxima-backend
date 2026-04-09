@@ -84,7 +84,10 @@ export const authorize = (...roles: Role[]) => {
             return next(new AppError('Not authorized', 401));
         }
 
-        if (!roles.includes(req.user.role)) {
+        const hasAccess = roles.includes(req.user.role) || 
+                          (req.user.roles && req.user.roles.some(r => roles.includes(r)));
+
+        if (!hasAccess) {
             console.warn(`[🚨 UNAUTHORIZED ACCESS ATTEMPT]: User ${req.user.id} (${req.user.role}) tried to access route restricted to roles: ${roles.join(', ')}`);
             return next(new AppError(`User role ${req.user.role} is not authorized to access this route`, 403));
         }
@@ -97,7 +100,10 @@ export const authorize = (...roles: Role[]) => {
  * Blocks access if the professional hasn't completed their profile.
  */
 export const ensureOnboardingComplete = (req: AuthRequest, res: Response, next: NextFunction) => {
-    if (req.user?.role === Role.PROFESSIONAL && !req.user.onboardingComplete) {
+    const isProfessional = req.user?.role === Role.PROFESSIONAL || 
+                           (req.user?.roles && req.user.roles.includes(Role.PROFESSIONAL));
+
+    if (isProfessional && !req.user?.onboardingComplete) {
         return next(new AppError('Please complete your profile configuration to proceed.', 403));
     }
     next();
