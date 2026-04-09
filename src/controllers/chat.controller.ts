@@ -272,10 +272,16 @@ export const getAdminDirectory = async (req: AuthRequest, res: Response) => {
 
     // 2. Fetch all Professionals
     const professionals = await prisma.user.findMany({
-        where: { OR: [{ role: 'PROFESSIONAL' }, { roles: { has: 'PROFESSIONAL' } }] },
+        where: {
+            OR: [
+                { role: 'PROFESSIONAL' },
+                { roles: { has: 'PROFESSIONAL' } },
+                { profile: { onboardingComplete: true } }
+            ]
+        },
         include: {
             profile: {
-                select: { firstName: true, lastName: true, avatarUrl: true, category: true }
+                select: { firstName: true, lastName: true, avatarUrl: true, category: true, onboardingComplete: true }
             }
         },
         orderBy: { createdAt: 'desc' }

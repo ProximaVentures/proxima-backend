@@ -404,7 +404,10 @@ export const assignProfessional = asyncHandler(async (req: Request, res: Respons
         include: { profile: true }
     });
 
-    const isProfessional = professional?.role === 'PROFESSIONAL' || professional?.roles.includes('PROFESSIONAL');
+    const isProfessional = 
+        professional?.role === 'PROFESSIONAL' || 
+        professional?.roles.includes('PROFESSIONAL') ||
+        professional?.profile?.onboardingComplete === true;
 
     if (!professional || !isProfessional) {
         throw new AppError('Invalid professional ID', 400);
@@ -454,14 +457,29 @@ export const getAllUsers = asyncHandler(async (req: Request, res: Response) => {
     const page = typeof req.query.page === 'string' ? parseInt(req.query.page) : 1;
     const limit = typeof req.query.limit === 'string' ? parseInt(req.query.limit) : 10;
 
+    const vettingStatus = typeof req.query.vettingStatus === 'string' ? req.query.vettingStatus : undefined;
+
     const skip = (page - 1) * limit;
 
     const where: any = {};
-    if (role) {
+    if (role === 'PROFESSIONAL') {
+        where.OR = [
+            { role: 'PROFESSIONAL' },
+            { roles: { has: 'PROFESSIONAL' } },
+            { profile: { onboardingComplete: true } }
+        ];
+    } else if (role) {
         where.OR = [
             { role: role },
             { roles: { has: role } }
         ];
+    }
+
+    if (vettingStatus) {
+        where.profile = { 
+            ...(where.profile || {}),
+            vettingStatus: vettingStatus as any 
+        };
     }
 
     if (search) {
@@ -590,8 +608,18 @@ export const getProfessionalById = asyncHandler(async (req: Request, res: Respon
  */
 export const getUserStats = asyncHandler(async (req: Request, res: Response) => {
     const [clientCount, professionalCount, totalUsersCount, projectCount, pitchCount] = await Promise.all([
-        prisma.user.count({ where: { OR: [{ role: 'CLIENT' }, { roles: { has: 'CLIENT' } }] } }),
-        prisma.user.count({ where: { OR: [{ role: 'PROFESSIONAL' }, { roles: { has: 'PROFESSIONAL' } }] } }),
+        prisma.user.count({ 
+            where: { OR: [{ role: 'CLIENT' }, { roles: { has: 'CLIENT' } }] } 
+        }),
+        prisma.user.count({ 
+            where: { 
+                OR: [
+                    { role: 'PROFESSIONAL' }, 
+                    { roles: { has: 'PROFESSIONAL' } },
+                    { profile: { onboardingComplete: true } }
+                ] 
+            } 
+        }),
         prisma.user.count(),
         prisma.project.count(),
         prisma.investmentPitch.count(),
