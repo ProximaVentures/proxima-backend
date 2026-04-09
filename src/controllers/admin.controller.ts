@@ -174,6 +174,38 @@ export const vetProfessional = asyncHandler(async (req: Request, res: Response) 
 });
 
 /**
+ * Update Professional Rating
+ * Updates the star rating for a professional profile.
+ */
+export const updateProfessionalRating = asyncHandler(async (req: Request, res: Response) => {
+    const { id } = req.params as { id: string };
+    const { rating } = req.body;
+
+    if (typeof rating !== 'number' || rating < 0 || rating > 5) {
+        throw new AppError('Invalid rating. Must be a number between 0 and 5.', 400);
+    }
+
+    const profile = await prisma.profile.findUnique({
+        where: { id },
+    });
+
+    if (!profile) {
+        throw new AppError('Profile not found', 404);
+    }
+
+    const updatedProfile = await prisma.profile.update({
+        where: { id },
+        data: { rating },
+    });
+
+    res.status(200).json({
+        success: true,
+        message: 'Professional rating updated successfully.',
+        data: updatedProfile,
+    });
+});
+
+/**
  * Get All Projects (Admin)
  */
 export const getAllProjects = asyncHandler(async (req: Request, res: Response) => {

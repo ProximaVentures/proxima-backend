@@ -14,6 +14,7 @@ router.use(protect, authorize(Role.ADMIN));
 
 router.get('/professionals/pending', adminController.getPendingProfessionals);
 router.patch('/professionals/:id/vet', adminController.vetProfessional);
+router.patch('/professionals/:id/rating', adminController.updateProfessionalRating);
 
 // User Management
 router.get('/users', adminController.getAllUsers);
