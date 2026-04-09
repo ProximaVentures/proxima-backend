@@ -462,60 +462,8 @@ export const getAllUsers = asyncHandler(async (req: Request, res: Response) => {
 
     const skip = (page - 1) * limit;
 
-    const where: any = {};
-    if (roleQuery === 'PROFESSIONAL') {
-        where.OR = [
-            { role: Role.PROFESSIONAL },
-            { roles: { hasSome: [Role.PROFESSIONAL] } },
-            { profile: { onboardingComplete: true } }
-        ];
-    } else if (roleQuery === 'CLIENT') {
-        where.OR = [
-            { role: Role.CLIENT },
-            { roles: { hasSome: [Role.CLIENT] } }
-        ];
-    } else if (roleQuery) {
-        where.OR = [
-            { role: roleQuery as any },
-            { roles: { hasSome: [roleQuery as any] } }
-        ];
-    }
-
-    if (vettingStatus) {
-        where.profile = { 
-            ...(where.profile || {}),
-            vettingStatus: vettingStatus as any 
-        };
-    }
-
-    if (search) {
-        const searchCondition = [
-            { id: { contains: search, mode: 'insensitive' } },
-            { email: { contains: search, mode: 'insensitive' } },
-            { username: { contains: search, mode: 'insensitive' } },
-            { 
-                profile: {
-                    OR: [
-                        { firstName: { contains: search, mode: 'insensitive' } },
-                        { lastName: { contains: search, mode: 'insensitive' } }
-                    ]
-                }
-            }
-        ];
-        
-        if (where.OR) {
-            where.AND = [
-                { OR: where.OR },
-                { OR: searchCondition }
-            ];
-            delete where.OR;
-        } else {
-            where.OR = searchCondition;
-        }
-    }
-
-    const users = await prisma.user.findMany({
-        where,
+    // Fetch all relevant users for in-memory filtering to bypass potential Prisma/Neon array filtering issues
+    const allUsers = await prisma.user.findMany({
         include: {
             profile: true,
             _count: {
@@ -525,20 +473,57 @@ export const getAllUsers = asyncHandler(async (req: Request, res: Response) => {
                 }
             }
         },
-        skip,
-        take: Number(limit),
         orderBy: { createdAt: 'desc' }
     });
 
-    const total = await prisma.user.count({ where });
+    let filteredUsers = allUsers;
+
+    // 1. Role Filtering (Inclusive)
+    if (roleQuery === 'PROFESSIONAL') {
+        filteredUsers = allUsers.filter(u => 
+            u.role === Role.PROFESSIONAL || 
+            (u.roles && u.roles.includes(Role.PROFESSIONAL)) || 
+            u.profile?.onboardingComplete === true
+        );
+    } else if (roleQuery === 'CLIENT') {
+        filteredUsers = allUsers.filter(u => 
+            u.role === Role.CLIENT || 
+            (u.roles && u.roles.includes(Role.CLIENT))
+        );
+    } else if (roleQuery) {
+        filteredUsers = allUsers.filter(u => 
+            u.role === roleQuery || 
+            (u.roles && u.roles.includes(roleQuery as any))
+        );
+    }
+
+    // 2. Search Filtering
+    if (search) {
+        const s = search.toLowerCase();
+        filteredUsers = filteredUsers.filter(u => 
+            u.id.toLowerCase().includes(s) ||
+            u.email.toLowerCase().includes(s) ||
+            (u.username && u.username.toLowerCase().includes(s)) ||
+            (u.profile?.firstName && u.profile.firstName.toLowerCase().includes(s)) ||
+            (u.profile?.lastName && u.profile.lastName.toLowerCase().includes(s))
+        );
+    }
+
+    // 3. Vetting Status Filtering
+    if (vettingStatus) {
+        filteredUsers = filteredUsers.filter(u => u.profile?.vettingStatus === vettingStatus);
+    }
+
+    const total = filteredUsers.length;
+    const paginatedUsers = filteredUsers.slice(skip, skip + Number(limit));
 
     res.status(200).json({
         success: true,
-        count: users.length,
+        count: paginatedUsers.length,
         total,
         totalPages: Math.ceil(total / Number(limit)),
         currentPage: Number(page),
-        data: users
+        data: paginatedUsers
     });
 });
 
