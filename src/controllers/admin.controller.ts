@@ -604,19 +604,22 @@ export const getProfessionalById = asyncHandler(async (req: Request, res: Respon
  * Get User Stats (Admin)
  */
 export const getUserStats = asyncHandler(async (req: Request, res: Response) => {
-    const [clientCount, professionalCount, totalUsersCount, projectCount, pitchCount] = await Promise.all([
-        prisma.user.count({ 
-            where: { OR: [{ role: Role.CLIENT }, { roles: { hasSome: [Role.CLIENT] } }] } 
-        }),
-        prisma.user.count({ 
-            where: { 
-                OR: [
-                    { role: Role.PROFESSIONAL }, 
-                    { roles: { hasSome: [Role.PROFESSIONAL] } },
-                    { profile: { onboardingComplete: true } }
-                ] 
-            } 
-        }),
+    // Fetch users for in-memory statistics calculation to bypass Prisma array filtering issues
+    const usersForStats = await prisma.user.findMany({
+        include: { profile: { select: { onboardingComplete: true } } }
+    });
+
+    const clientCount = usersForStats.filter(u => 
+        u.role === Role.CLIENT || (u.roles && u.roles.includes(Role.CLIENT))
+    ).length;
+
+    const professionalCount = usersForStats.filter(u => 
+        u.role === Role.PROFESSIONAL || 
+        (u.roles && u.roles.includes(Role.PROFESSIONAL)) || 
+        u.profile?.onboardingComplete === true
+    ).length;
+
+    const [totalUsersCount, projectCount, pitchCount] = await Promise.all([
         prisma.user.count(),
         prisma.project.count(),
         prisma.investmentPitch.count(),
