@@ -460,7 +460,7 @@ export const getAllUsers = asyncHandler(async (req: Request, res: Response) => {
 
     const vettingStatus = typeof req.query.vettingStatus === 'string' ? req.query.vettingStatus : undefined;
 
-    const skip = (page - 1) * limit;
+    let skip = (page - 1) * limit;
 
     // Fetch all relevant users for in-memory filtering to bypass potential Prisma/Neon array filtering issues
     const allUsers = await prisma.user.findMany({
@@ -521,9 +521,25 @@ export const getAllUsers = asyncHandler(async (req: Request, res: Response) => {
     if (vettingStatus) {
         filteredUsers = filteredUsers.filter(u => u.profile?.vettingStatus === vettingStatus);
     }
-
+    // 4. Pagination
     const total = filteredUsers.length;
+    skip = (page - 1) * limit;
     const paginatedUsers = filteredUsers.slice(skip, skip + Number(limit));
+
+    // LOGGING FOR VERIFICATION
+    if (roleQuery?.toUpperCase() === 'PROFESSIONAL') {
+        console.log(`[ADMIN FETCH] Professionals Found: ${total}`);
+        const jude = filteredUsers.find(u => u.email === 'fonyuyjudegita@gmail.com');
+        if (jude) {
+            console.log(`[ADMIN FETCH] Jude Gita IS IN THE LIST. Index: ${filteredUsers.indexOf(jude)}`);
+        } else {
+            console.log(`[ADMIN FETCH] Jude Gita IS MISSING! Data check:`, 
+                allUsers.filter(u => u.email === 'fonyuyjudegita@gmail.com').map(u => ({
+                    role: u.role, roles: u.roles, onboarding: u.profile?.onboardingComplete
+                }))
+            );
+        }
+    }
 
     res.status(200).json({
         success: true,

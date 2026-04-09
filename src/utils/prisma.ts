@@ -7,12 +7,14 @@ import pg from 'pg';
 // Utilize pooled database connections for optimal throughput.
 const connectionString = process.env.DATABASE_URL;
 
+const isLocalDB = connectionString?.includes('localhost') || connectionString?.includes('127.0.0.1');
+
 const pool = new pg.Pool({
     connectionString,
     max: 20,
     idleTimeoutMillis: 60000,
     connectionTimeoutMillis: 20000,
-    ssl: {
+    ssl: isLocalDB ? false : {
         rejectUnauthorized: false // Necessary for some Neon environments/proxies
     }
 });
