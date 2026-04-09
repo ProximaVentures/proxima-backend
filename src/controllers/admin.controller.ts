@@ -479,21 +479,27 @@ export const getAllUsers = asyncHandler(async (req: Request, res: Response) => {
     let filteredUsers = allUsers;
 
     // 1. Role Filtering (Inclusive)
-    if (roleQuery === 'PROFESSIONAL') {
-        filteredUsers = allUsers.filter(u => 
-            u.role === Role.PROFESSIONAL || 
-            (u.roles && u.roles.includes(Role.PROFESSIONAL)) || 
-            u.profile?.onboardingComplete === true
-        );
-    } else if (roleQuery === 'CLIENT') {
-        filteredUsers = allUsers.filter(u => 
-            u.role === Role.CLIENT || 
-            (u.roles && u.roles.includes(Role.CLIENT))
-        );
+    if (roleQuery?.toUpperCase() === 'PROFESSIONAL') {
+        filteredUsers = allUsers.filter(u => {
+            const hasProRole = u.role === 'PROFESSIONAL' || u.role === Role.PROFESSIONAL;
+            const rolesArray = Array.isArray(u.roles) ? u.roles : [];
+            const hasProInArray = rolesArray.some(r => String(r).toUpperCase() === 'PROFESSIONAL');
+            const isOnboarded = u.profile?.onboardingComplete === true;
+            
+            return hasProRole || hasProInArray || isOnboarded;
+        });
+    } else if (roleQuery?.toUpperCase() === 'CLIENT') {
+        filteredUsers = allUsers.filter(u => {
+            const hasClientRole = u.role === 'CLIENT' || u.role === Role.CLIENT;
+            const rolesArray = Array.isArray(u.roles) ? u.roles : [];
+            const hasClientInArray = rolesArray.some(r => String(r).toUpperCase() === 'CLIENT');
+            
+            return hasClientRole || hasClientInArray;
+        });
     } else if (roleQuery) {
         filteredUsers = allUsers.filter(u => 
             u.role === roleQuery || 
-            (u.roles && u.roles.includes(roleQuery as any))
+            (u.roles && u.roles.some((r: any) => String(r).toUpperCase() === roleQuery.toUpperCase()))
         );
     }
 
