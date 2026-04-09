@@ -404,7 +404,9 @@ export const assignProfessional = asyncHandler(async (req: Request, res: Respons
         include: { profile: true }
     });
 
-    if (!professional || professional.role !== 'PROFESSIONAL') {
+    const isProfessional = professional?.role === 'PROFESSIONAL' || professional?.roles.includes('PROFESSIONAL');
+
+    if (!professional || !isProfessional) {
         throw new AppError('Invalid professional ID', 400);
     }
 
@@ -456,11 +458,14 @@ export const getAllUsers = asyncHandler(async (req: Request, res: Response) => {
 
     const where: any = {};
     if (role) {
-        where.role = role;
+        where.OR = [
+            { role: role },
+            { roles: { has: role } }
+        ];
     }
 
     if (search) {
-        where.OR = [
+        const searchCondition = [
             { id: { contains: search, mode: 'insensitive' } },
             { email: { contains: search, mode: 'insensitive' } },
             { username: { contains: search, mode: 'insensitive' } },
@@ -473,6 +478,16 @@ export const getAllUsers = asyncHandler(async (req: Request, res: Response) => {
                 }
             }
         ];
+        
+        if (where.OR) {
+            where.AND = [
+                { OR: where.OR },
+                { OR: searchCondition }
+            ];
+            delete where.OR;
+        } else {
+            where.OR = searchCondition;
+        }
     }
 
     const users = await prisma.user.findMany({
@@ -574,9 +589,10 @@ export const getProfessionalById = asyncHandler(async (req: Request, res: Respon
  * Get User Stats (Admin)
  */
 export const getUserStats = asyncHandler(async (req: Request, res: Response) => {
-    const [clientCount, professionalCount, projectCount, pitchCount] = await Promise.all([
-        prisma.user.count({ where: { role: 'CLIENT' } }),
-        prisma.user.count({ where: { role: 'PROFESSIONAL' } }),
+    const [clientCount, professionalCount, totalUsersCount, projectCount, pitchCount] = await Promise.all([
+        prisma.user.count({ where: { OR: [{ role: 'CLIENT' }, { roles: { has: 'CLIENT' } }] } }),
+        prisma.user.count({ where: { OR: [{ role: 'PROFESSIONAL' }, { roles: { has: 'PROFESSIONAL' } }] } }),
+        prisma.user.count(),
         prisma.project.count(),
         prisma.investmentPitch.count(),
     ]);
@@ -588,7 +604,7 @@ export const getUserStats = asyncHandler(async (req: Request, res: Response) => 
             professionals: professionalCount,
             projects: projectCount,
             pitches: pitchCount,
-            totalUsers: clientCount + professionalCount
+            totalUsers: totalUsersCount
         }
     });
 });

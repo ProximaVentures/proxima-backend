@@ -256,7 +256,7 @@ export const getAdminDirectory = async (req: AuthRequest, res: Response) => {
 
     // 1. Fetch all Clients with their projects
     const clients = await prisma.user.findMany({
-        where: { role: 'CLIENT' },
+        where: { OR: [{ role: 'CLIENT' }, { roles: { has: 'CLIENT' } }] },
         include: {
             profile: {
                 select: { firstName: true, lastName: true, avatarUrl: true }
@@ -272,7 +272,7 @@ export const getAdminDirectory = async (req: AuthRequest, res: Response) => {
 
     // 2. Fetch all Professionals
     const professionals = await prisma.user.findMany({
-        where: { role: 'PROFESSIONAL' },
+        where: { OR: [{ role: 'PROFESSIONAL' }, { roles: { has: 'PROFESSIONAL' } }] },
         include: {
             profile: {
                 select: { firstName: true, lastName: true, avatarUrl: true, category: true }
