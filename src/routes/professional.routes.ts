@@ -1,5 +1,9 @@
 import { Router } from 'express';
-import { reportTask } from '../controllers/professional.controller.js';
+import { 
+    reportTask, 
+    updateTaskStatus, 
+    sendTaskFeedback 
+} from '../controllers/professional.controller.js';
 import { protect, authorize } from '../middleware/auth.middleware.js';
 
 const router = Router();
@@ -42,5 +46,7 @@ router.use(authorize('PROFESSIONAL'));
  *         description: Task reported successfully
  */
 router.post('/tasks/:id/report', reportTask);
+router.patch('/tasks/:id/status', updateTaskStatus);
+router.post('/tasks/:id/feedback', sendTaskFeedback);
 
 export default router;
