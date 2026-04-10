@@ -1462,8 +1462,8 @@ export const reviewTask = asyncHandler(async (req: Request, res: Response) => {
     const taskId = req.params.id as string;
     const { feedback, status } = req.body;
 
-    if (!['DONE', 'DO_AGAIN', 'CANCELLED'].includes(status)) {
-        throw new AppError('Invalid status for review. Use DONE, DO_AGAIN, or CANCELLED', 400);
+    if (!['DONE', 'DO_AGAIN', 'CANCELLED', 'IN_PROGRESS'].includes(status)) {
+        throw new AppError('Invalid status for review. Use DONE, DO_AGAIN, CANCELLED, or IN_PROGRESS', 400);
     }
 
     const task = await prisma.projectTask.findUnique({
@@ -1486,16 +1486,47 @@ export const reviewTask = asyncHandler(async (req: Request, res: Response) => {
     try {
         const notifyUserIds = task.professionalIds;
         if (notifyUserIds.length > 0) {
-            for (const userId of notifyUserIds) {
+            const users = await prisma.user.findMany({ where: { id: { in: notifyUserIds } } });
+            for (const user of users) {
+                // System Notification
                 await prisma.notification.create({
                     data: {
-                        userId,
-                        title: `Task Review: ${status}`,
-                        message: `Admin has reviewed your task: "${task.title}". Status: ${status}`,
+                        userId: user.id,
+                        title: `Task Verdict: ${status.replace('_', ' ')}`,
+                        message: `HQ has reviewed "${task.title}". Verdict: ${status}. ${feedback ? `Feedback: ${feedback}` : ''}`,
                         type: 'TASK',
                         link: `/dashboard/professional/projects/${task.projectId}`
                     }
                 });
+
+                // Email Notification
+                if (user.email) {
+                    const statusText = status === 'DONE' ? 'ACCEPTED' : status === 'DO_AGAIN' ? 'REQUIRES RE-PROCESSING' : 'REJECTED';
+                    await sendEmail(
+                        user.email,
+                        `🛠️ Task Review: ${task.title}`,
+                        `
+                        <div style="font-family: sans-serif; color: #1e293b; max-width: 600px; margin: auto; border: 1px solid #e2e8f0; border-radius: 12px; padding: 32px;">
+                            <h2 style="color: #0f172a; margin-bottom: 24px;">Mission Update: ${task.title}</h2>
+                            <p style="font-size: 14px; color: #64748b; text-transform: uppercase; font-weight: 700; tracking: 0.1em; margin-bottom: 8px;">Verdict</p>
+                            <div style="background-color: ${status === 'DONE' ? '#f0fdf4' : '#fef2f2'}; color: ${status === 'DONE' ? '#166534' : '#991b1b'}; padding: 12px 16px; border-radius: 8px; display: inline-block; font-weight: 800; font-size: 14px; border: 1px solid ${status === 'DONE' ? '#dcfce7' : '#fee2e2'}; margin-bottom: 24px;">
+                                ${statusText}
+                            </div>
+                            
+                            ${feedback ? `
+                            <div style="background-color: #f8fafc; border: 1px solid #e2e8f0; padding: 20px; border-radius: 12px; margin-bottom: 24px;">
+                                <p style="font-size: 12px; color: #94a3b8; text-transform: uppercase; font-weight: 800; margin-bottom: 12px;">Operational Feedback from HQ</p>
+                                <p style="font-size: 16px; font-style: italic; color: #334155; line-height: 1.6;">"${feedback}"</p>
+                            </div>
+                            ` : ''}
+
+                            <div style="margin-top: 32px;">
+                                <a href="${process.env.FRONTEND_URL}/dashboard/professional/projects/${task.projectId}" style="background-color: #0f172a; color: #ffffff; padding: 12px 24px; border-radius: 8px; text-decoration: none; font-weight: 700; font-size: 14px; display: inline-block;">View Board</a>
+                            </div>
+                        </div>
+                        `
+                    ).catch(err => console.error('[Review Email] Failed:', err));
+                }
             }
         }
     } catch (err) {
