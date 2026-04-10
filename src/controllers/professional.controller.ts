@@ -79,6 +79,11 @@ export const updateTaskStatus = asyncHandler(async (req: AuthRequest, res: Respo
     if (!userId) throw new AppError('Unauthorized', 401);
     if (!status) throw new AppError('Status is required', 400);
 
+    // Professionals CANNOT set status to DONE directly. That requires Admin review.
+    if (status === 'DONE') {
+        throw new AppError('Professional cannot move task to DONE. This requires Admin verification.', 403);
+    }
+
     const task = await prisma.projectTask.findUnique({
         where: { id: taskId as string },
         include: { project: true }
