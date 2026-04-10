@@ -139,7 +139,7 @@ export const updateTaskStatus = asyncHandler(async (req: AuthRequest, res: Respo
 export const sendTaskFeedback = asyncHandler(async (req: AuthRequest, res: Response) => {
     const userId = req.user?.id;
     const taskId = req.params.id;
-    const { feedback } = req.body;
+    const { feedback, links, media } = req.body;
 
     if (!userId) throw new AppError('Unauthorized', 401);
     if (!feedback) throw new AppError('Feedback content is required', 400);
@@ -161,10 +161,6 @@ export const sendTaskFeedback = asyncHandler(async (req: AuthRequest, res: Respo
         throw new AppError('You are not authorized to send feedback for this task', 403);
     }
 
-    // Since ProjectTask doesn't have a feedback field yet, we rely on Notifications
-    // But we can also log it to a global 'SystemNotes' if we had one.
-    // For now, notification is the primary communication channel.
-
     try {
         const admins = await prisma.user.findMany({ where: { role: 'ADMIN' } });
         for (const admin of admins) {
@@ -172,7 +168,7 @@ export const sendTaskFeedback = asyncHandler(async (req: AuthRequest, res: Respo
                 data: {
                     userId: admin.id,
                     title: 'Task Clarification Requested',
-                    message: `Strategic question from Professional on task: "${task.title}". Feedback: "${feedback}"`,
+                    message: `Strategic question from Professional on task: "${task.title}". Context: "${feedback}". Assets: ${links?.length || 0} links, ${media?.length || 0} media items.`,
                     type: 'TASK',
                     link: `/admin/projects/${task.projectId}`
                 }
