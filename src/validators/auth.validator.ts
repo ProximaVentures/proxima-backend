@@ -21,7 +21,12 @@ export const registerSchema = z.object({
 const BaseProfileSchema = z.object({
     firstName: z.string().min(2),
     lastName: z.string().min(2),
-    bio: z.string().max(500).optional(),
+    jobTitle: z.string().optional(),
+    city: z.string().optional(),
+    country: z.string().optional(),
+    avatarUrl: z.string().optional(),
+    bio: z.string().max(1000).optional(),
+    preferences: z.any().optional(), // Flexible JSON configuration
 });
 
 // Proof of Work Schema
@@ -33,30 +38,19 @@ const ProjectSchema = z.object({
 });
 
 export const professionalProfileSchema = z.discriminatedUnion('category', [
-    // Software Developer (Strict)
+    // Software Developer
     z.object({
         category: z.literal('SOFTWARE_DEVELOPER'),
         ...BaseProfileSchema.shape,
         metadata: z.object({
-            developerType: z.enum([
-                'FRONTEND',
-                'BACKEND',
-                'FULLSTACK',
-                'MOBILE',
-                'DEVOPS',
-                'GAME_DEV',
-                'AI_ML_ENGINEER',
-                'DATA_ENGINEER',
-                'QA_ENGINEER',
-                'OTHER'
-            ]),
-            githubUrl: z.string().url("GitHub URL is required for code verification"),
-            portfolioUrl: z.string().url("Portfolio URL is required"),
-            resumeUrl: z.string().url("Resume/CV link is required"),
-            yearsOfExperience: z.number().min(0),
-            mainStack: z.array(z.string()).min(1, "At least one technology is required"),
-            topProjects: z.array(ProjectSchema).length(2, "You must submit exactly 2 top projects"),
-        }),
+            developerType: z.string().optional(),
+            githubUrl: z.string().optional(),
+            portfolioUrl: z.string().optional(),
+            resumeUrl: z.string().optional(),
+            yearsOfExperience: z.number().min(0).optional(),
+            mainStack: z.array(z.string()).optional(),
+            topProjects: z.array(ProjectSchema).optional(),
+        }).passthrough().optional(),
     }),
 
     // Project Manager
@@ -64,12 +58,12 @@ export const professionalProfileSchema = z.discriminatedUnion('category', [
         category: z.literal('PROJECT_MANAGER'),
         ...BaseProfileSchema.shape,
         metadata: z.object({
-            linkedinUrl: z.string().url(),
-            resumeUrl: z.string().url("Resume/CV link is required"),
-            certifications: z.array(z.string()).min(1, "At least one certification (e.g., PMP, CSM) is required"),
-            toolsUsed: z.array(z.string()),
-            caseStudies: z.string().url("Link to case studies or portfolio is required"),
-        }),
+            linkedinUrl: z.string().optional(),
+            resumeUrl: z.string().optional(),
+            certifications: z.array(z.string()).optional(),
+            toolsUsed: z.array(z.string()).optional(),
+            caseStudies: z.string().optional(),
+        }).passthrough().optional(),
     }),
 
     // Product Designer
@@ -77,12 +71,12 @@ export const professionalProfileSchema = z.discriminatedUnion('category', [
         category: z.literal('PRODUCT_DESIGNER'),
         ...BaseProfileSchema.shape,
         metadata: z.object({
-            portfolioUrl: z.string().url("Portfolio URL is required"),
-            behanceUrl: z.string().url().optional(),
-            dribbbleUrl: z.string().url().optional(),
-            tools: z.array(z.string()),
-            topProjects: z.array(ProjectSchema).length(2, "You must submit exactly 2 top projects"),
-        }),
+            portfolioUrl: z.string().optional(),
+            behanceUrl: z.string().optional(),
+            dribbbleUrl: z.string().optional(),
+            tools: z.array(z.string()).optional(),
+            topProjects: z.array(ProjectSchema).optional(),
+        }).passthrough().optional(),
     }),
 
     // Graphic Designer
@@ -90,10 +84,10 @@ export const professionalProfileSchema = z.discriminatedUnion('category', [
         category: z.literal('GRAPHIC_DESIGNER'),
         ...BaseProfileSchema.shape,
         metadata: z.object({
-            portfolioUrl: z.string().url("Portfolio URL is required"),
-            instagramUrl: z.string().url().optional(),
-            tools: z.array(z.string()),
-        }),
+            portfolioUrl: z.string().optional(),
+            instagramUrl: z.string().optional(),
+            tools: z.array(z.string()).optional(),
+        }).passthrough().optional(),
     }),
 
     // Content Creator
@@ -101,10 +95,10 @@ export const professionalProfileSchema = z.discriminatedUnion('category', [
         category: z.literal('CONTENT_CREATOR'),
         ...BaseProfileSchema.shape,
         metadata: z.object({
-            portfolioUrl: z.string().url("Portfolio/Blog URL is required"),
-            socialMediaStats: z.record(z.string(), z.string()), // Corrected z.record signature
-            niche: z.string(),
-        }),
+            portfolioUrl: z.string().optional(),
+            socialMediaStats: z.any().optional(),
+            niche: z.string().optional(),
+        }).passthrough().optional(),
     }),
 
     // 📊 Digital Marketer
@@ -112,10 +106,10 @@ export const professionalProfileSchema = z.discriminatedUnion('category', [
         category: z.literal('DIGITAL_MARKETER'),
         ...BaseProfileSchema.shape,
         metadata: z.object({
-            portfolioUrl: z.string().url("Portfolio/Case Studies URL is required"),
-            certifications: z.array(z.string()),
-            campaignBudgetsManaged: z.string(), // e.g., "$10k/month"
-        }),
+            portfolioUrl: z.string().optional(),
+            certifications: z.array(z.string()).optional(),
+            campaignBudgetsManaged: z.string().optional(),
+        }).passthrough().optional(),
     }),
 
     // Accountant
@@ -123,11 +117,11 @@ export const professionalProfileSchema = z.discriminatedUnion('category', [
         category: z.literal('ACCOUNTANT'),
         ...BaseProfileSchema.shape,
         metadata: z.object({
-            linkedinUrl: z.string().url(),
-            resumeUrl: z.string().url("Resume/CV link is required"),
-            certifications: z.array(z.string()).min(1, "CPA/ACCA or equivalent required"),
-            yearsOfExperience: z.number().min(1),
-        }),
+            linkedinUrl: z.string().optional(),
+            resumeUrl: z.string().optional(),
+            certifications: z.array(z.string()).optional(),
+            yearsOfExperience: z.number().optional(),
+        }).passthrough().optional(),
     }),
 
     // Video Editor
@@ -135,9 +129,9 @@ export const professionalProfileSchema = z.discriminatedUnion('category', [
         category: z.literal('VIDEO_EDITOR'),
         ...BaseProfileSchema.shape,
         metadata: z.object({
-            portfolioUrl: z.string().url("Showreel/Portfolio Link is required"),
-            softwareProficiency: z.array(z.string()),
-        }),
+            portfolioUrl: z.string().optional(),
+            softwareProficiency: z.array(z.string()).optional(),
+        }).passthrough().optional(),
     }),
 
     // Social Media Manager
@@ -145,9 +139,9 @@ export const professionalProfileSchema = z.discriminatedUnion('category', [
         category: z.literal('SOCIAL_MEDIA_MANAGER'),
         ...BaseProfileSchema.shape,
         metadata: z.object({
-            portfolioUrl: z.string().url("Portfolio Link is required"),
-            platformsManaged: z.array(z.string()),
-        }),
+            portfolioUrl: z.string().optional(),
+            platformsManaged: z.array(z.string()).optional(),
+        }).passthrough().optional(),
     }),
 
     // Lawyer
@@ -155,11 +149,11 @@ export const professionalProfileSchema = z.discriminatedUnion('category', [
         category: z.literal('LAWYER'),
         ...BaseProfileSchema.shape,
         metadata: z.object({
-            linkedinUrl: z.string().url(),
-            barLicenseNumber: z.string().min(5, "Bar License Number is required"),
-            jurisdiction: z.string(),
-            specialization: z.string(),
-        }),
+            linkedinUrl: z.string().optional(),
+            barLicenseNumber: z.string().optional(),
+            jurisdiction: z.string().optional(),
+            specialization: z.string().optional(),
+        }).passthrough().optional(),
     }),
 
     // HR Specialist
@@ -167,10 +161,10 @@ export const professionalProfileSchema = z.discriminatedUnion('category', [
         category: z.literal('HR_SPECIALIST'),
         ...BaseProfileSchema.shape,
         metadata: z.object({
-            linkedinUrl: z.string().url(),
-            resumeUrl: z.string().url("Resume/CV link is required"),
-            certifications: z.array(z.string()),
-        }),
+            linkedinUrl: z.string().optional(),
+            resumeUrl: z.string().optional(),
+            certifications: z.array(z.string()).optional(),
+        }).passthrough().optional(),
     }),
 
     // Data Analyst
@@ -178,11 +172,11 @@ export const professionalProfileSchema = z.discriminatedUnion('category', [
         category: z.literal('DATA_ANALYST'),
         ...BaseProfileSchema.shape,
         metadata: z.object({
-            githubUrl: z.string().url().optional(),
-            portfolioUrl: z.string().url("Portfolio/Kaggle Link is required"),
-            tools: z.array(z.string()),
-            topProjects: z.array(ProjectSchema).length(2, "You must submit exactly 2 top projects"),
-        }),
+            githubUrl: z.string().optional(),
+            portfolioUrl: z.string().optional(),
+            tools: z.array(z.string()).optional(),
+            topProjects: z.array(ProjectSchema).optional(),
+        }).passthrough().optional(),
     }),
 ]);
 

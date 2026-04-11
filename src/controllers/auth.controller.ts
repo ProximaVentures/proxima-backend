@@ -184,7 +184,18 @@ export const resendOTP = asyncHandler(async (req: Request, res: Response) => {
  * Profile Completion Controller (Stage 2)
  */
 export const completeProfile = asyncHandler(async (req: AuthRequest, res: Response) => {
-    const { category, metadata, firstName, lastName, bio } = req.body;
+    const { 
+        category, 
+        metadata, 
+        firstName, 
+        lastName, 
+        bio,
+        jobTitle,
+        city,
+        country,
+        avatarUrl,
+        preferences
+    } = req.body;
     const userId = req.user?.id;
 
     if (!userId) throw new AppError('User not authenticated', 401);
@@ -195,9 +206,14 @@ export const completeProfile = asyncHandler(async (req: AuthRequest, res: Respon
             data: {
                 firstName,
                 lastName,
+                jobTitle,
+                city,
+                country,
                 bio,
+                avatarUrl,
                 category,
                 metadata,
+                preferences,
                 onboardingComplete: true,
                 vettingStatus: 'PENDING',
             },
