@@ -680,7 +680,7 @@ export const getProjectInterests = asyncHandler(async (req: Request, res: Respon
                         select: {
                             firstName: true,
                             lastName: true,
-                            avatarUrl: true,
+                            avatarUrl: true, jobTitle: true, city: true, country: true, metadata: true, preferences: true,
                             category: true,
                             bio: true
                         }
@@ -726,7 +726,7 @@ export const getAllInterests = asyncHandler(async (req: Request, res: Response) 
                         select: {
                             firstName: true,
                             lastName: true,
-                            avatarUrl: true,
+                            avatarUrl: true, jobTitle: true, city: true, country: true, metadata: true, preferences: true,
                             category: true,
                             bio: true
                         }
@@ -1628,7 +1628,7 @@ export const getProjectById = asyncHandler(async (req: Request, res: Response) =
                         select: {
                             firstName: true,
                             lastName: true,
-                            avatarUrl: true
+                            avatarUrl: true, jobTitle: true, city: true, country: true, metadata: true, preferences: true
                         }
                     }
                 }
@@ -1644,7 +1644,7 @@ export const getProjectById = asyncHandler(async (req: Request, res: Response) =
                                 select: {
                                     firstName: true,
                                     lastName: true,
-                                    avatarUrl: true,
+                                    avatarUrl: true, jobTitle: true, city: true, country: true, metadata: true, preferences: true,
                                     category: true
                                 }
                             }

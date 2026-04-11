@@ -46,7 +46,7 @@ export const scheduleMeeting = asyncHandler(async (req: AuthRequest, res: Respon
             creator: {
                 select: {
                     id: true,
-                    profile: { select: { firstName: true, avatarUrl: true } }
+                    profile: { select: { firstName: true, avatarUrl: true, jobTitle: true, city: true, country: true, metadata: true, preferences: true } }
                 }
             }
         }
@@ -116,7 +116,7 @@ export const getLatestMeeting = asyncHandler(async (req: AuthRequest, res: Respo
             creator: {
                 select: {
                     id: true,
-                    profile: { select: { firstName: true, avatarUrl: true } }
+                    profile: { select: { firstName: true, avatarUrl: true, jobTitle: true, city: true, country: true, metadata: true, preferences: true } }
                 }
             }
         }

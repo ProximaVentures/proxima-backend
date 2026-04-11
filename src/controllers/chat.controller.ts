@@ -32,7 +32,7 @@ export const getConversations = async (req: AuthRequest, res: Response) => {
                             email: true,
                             role: true,
                             profile: {
-                                select: { firstName: true, lastName: true, avatarUrl: true }
+                                select: { firstName: true, lastName: true, avatarUrl: true, jobTitle: true, city: true, country: true, metadata: true, preferences: true }
                             }
                         }
                     }
@@ -102,7 +102,7 @@ export const getMessages = async (req: AuthRequest, res: Response) => {
             sender: {
                 select: {
                     id: true,
-                    profile: { select: { firstName: true, avatarUrl: true } }
+                    profile: { select: { firstName: true, avatarUrl: true, jobTitle: true, city: true, country: true, metadata: true, preferences: true } }
                 }
             },
             replyTo: {
@@ -110,7 +110,7 @@ export const getMessages = async (req: AuthRequest, res: Response) => {
                     sender: {
                         select: {
                             id: true,
-                            profile: { select: { firstName: true, avatarUrl: true } }
+                            profile: { select: { firstName: true, avatarUrl: true, jobTitle: true, city: true, country: true, metadata: true, preferences: true } }
                         }
                     }
                 }
@@ -260,7 +260,7 @@ export const getAdminDirectory = async (req: AuthRequest, res: Response) => {
         where: { OR: [{ role: 'CLIENT' }, { roles: { has: 'CLIENT' } }] },
         include: {
             profile: {
-                select: { firstName: true, lastName: true, avatarUrl: true }
+                select: { firstName: true, lastName: true, avatarUrl: true, jobTitle: true, city: true, country: true, metadata: true, preferences: true }
             },
             projects: {
                 select: { id: true, title: true, status: true },
@@ -282,7 +282,7 @@ export const getAdminDirectory = async (req: AuthRequest, res: Response) => {
         },
         include: {
             profile: {
-                select: { firstName: true, lastName: true, avatarUrl: true, category: true, onboardingComplete: true }
+                select: { firstName: true, lastName: true, avatarUrl: true, jobTitle: true, city: true, country: true, metadata: true, preferences: true, category: true, onboardingComplete: true }
             }
         },
         orderBy: { createdAt: 'desc' }

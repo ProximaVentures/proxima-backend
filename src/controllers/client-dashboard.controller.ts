@@ -33,7 +33,7 @@ export const getProjectDashboard = asyncHandler(async (req: AuthRequest, res: Re
                         select: {
                             firstName: true,
                             lastName: true,
-                            avatarUrl: true,
+                            avatarUrl: true, jobTitle: true, city: true, country: true, metadata: true, preferences: true,
                         }
                     }
                 }
@@ -46,7 +46,7 @@ export const getProjectDashboard = asyncHandler(async (req: AuthRequest, res: Re
                         select: {
                             firstName: true,
                             lastName: true,
-                            avatarUrl: true,
+                            avatarUrl: true, jobTitle: true, city: true, country: true, metadata: true, preferences: true,
                         }
                     }
                 }
@@ -62,7 +62,7 @@ export const getProjectDashboard = asyncHandler(async (req: AuthRequest, res: Re
                                 select: {
                                     firstName: true,
                                     lastName: true,
-                                    avatarUrl: true,
+                                    avatarUrl: true, jobTitle: true, city: true, country: true, metadata: true, preferences: true,
                                     category: true,
                                 }
                             }
@@ -268,7 +268,7 @@ export const getSprintBoard = asyncHandler(async (req: AuthRequest, res: Respons
                 id: true,
                 username: true,
                 role: true,
-                profile: { select: { firstName: true, lastName: true, avatarUrl: true } }
+                profile: { select: { firstName: true, lastName: true, avatarUrl: true, jobTitle: true, city: true, country: true, metadata: true, preferences: true } }
             }
         })
         : [];
@@ -680,7 +680,7 @@ export const getSprintComments = asyncHandler(async (req: AuthRequest, res: Resp
                 id: true,
                 username: true,
                 role: true,
-                profile: { select: { firstName: true, lastName: true, avatarUrl: true } }
+                profile: { select: { firstName: true, lastName: true, avatarUrl: true, jobTitle: true, city: true, country: true, metadata: true, preferences: true } }
             }
         })
         : [];

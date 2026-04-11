@@ -274,7 +274,7 @@ export const getAcceptedProjects = asyncHandler(async (req: AuthRequest, res: Re
                         select: {
                             firstName: true,
                             lastName: true,
-                            avatarUrl: true,
+                            avatarUrl: true, jobTitle: true, city: true, country: true, metadata: true, preferences: true,
                         }
                     }
                 }
@@ -340,7 +340,7 @@ export const getProjectById = asyncHandler(async (req: AuthRequest, res: Respons
                         select: {
                             firstName: true,
                             lastName: true,
-                            avatarUrl: true,
+                            avatarUrl: true, jobTitle: true, city: true, country: true, metadata: true, preferences: true,
                         }
                     }
                 }
@@ -356,7 +356,7 @@ export const getProjectById = asyncHandler(async (req: AuthRequest, res: Respons
                                 select: {
                                     firstName: true,
                                     lastName: true,
-                                    avatarUrl: true,
+                                    avatarUrl: true, jobTitle: true, city: true, country: true, metadata: true, preferences: true,
                                     category: true,
                                 }
                             }
@@ -507,7 +507,7 @@ export const getMyMissions = asyncHandler(async (req: AuthRequest, res: Response
                                 select: {
                                     firstName: true,
                                     lastName: true,
-                                    avatarUrl: true
+                                    avatarUrl: true, jobTitle: true, city: true, country: true, metadata: true, preferences: true
                                 }
                             }
                         }
