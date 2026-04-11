@@ -148,6 +148,9 @@ model Profile {
   user            User                  @relation(fields: [userId], references: [id], onDelete: Cascade)
   firstName       String?
   lastName        String?
+  jobTitle        String?
+  city            String?
+  country         String?
   bio             String?
   avatarUrl       String?
   
@@ -159,6 +162,7 @@ model Profile {
   
   // Utilize JSONB for extensible, category-specific metadata.
   metadata        Json?                 @default("{}")
+  preferences     Json?                 @default("{}")
   verificationData Json?                @default("{}")
   rating          Int                   @default(0)
 }
