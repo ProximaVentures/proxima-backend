@@ -18,7 +18,9 @@ jobs:
           username: ${{ secrets.VPS_USER }}
           key: ${{ secrets.SSH_PRIVATE_KEY }}
           source: "., !node_modules, !dist"
-          target: "~/proven"
+          target: "~/proven/proven-backend"
+          overwrite: true
+          strip_components: 0
 
       - name: Deploy with Docker Compose
         uses: appleboy/ssh-action@master
@@ -28,6 +30,7 @@ jobs:
           key: ${{ secrets.SSH_PRIVATE_KEY }}
           script: |
             cd ~/proven/proven-backend
-            echo "🚀 [Deploy] Stopping & Building..."
-            docker compose -f docker-compose.prod.yml up -d --build backend
+            echo "🚀 [Deploy] Stopping & Building with fresh code..."
+            docker compose -f docker-compose.prod.yml down
+            docker compose -f docker-compose.prod.yml up -d --build --no-cache backend
             echo "✅ [Deploy] Finished successfully."
