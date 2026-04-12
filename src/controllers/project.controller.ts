@@ -139,7 +139,31 @@ export const getMySubmissions = asyncHandler(async (req: AuthRequest, res: Respo
     if (!userId) throw new AppError('Unauthorized', 401);
 
     const [projects, pitches] = await Promise.all([
-        prisma.project.findMany({ where: { clientId: userId }, orderBy: { createdAt: 'desc' } }),
+        prisma.project.findMany({ 
+            where: { clientId: userId }, 
+            include: {
+                assignments: {
+                    where: { status: 'ACTIVE' },
+                    include: {
+                        user: {
+                            select: {
+                                id: true,
+                                username: true,
+                                profile: {
+                                    select: {
+                                        firstName: true,
+                                        lastName: true,
+                                        avatarUrl: true,
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            },
+            orderBy: { createdAt: 'desc' } 
+        }),
+
         prisma.investmentPitch.findMany({ where: { clientId: userId }, orderBy: { createdAt: 'desc' } }),
     ]);
 
@@ -280,13 +304,23 @@ export const getAcceptedProjects = asyncHandler(async (req: AuthRequest, res: Re
                 }
             },
             assignments: {
-                where: {
-                    userId: req.user?.id || '',
-                },
                 select: {
                     userId: true,
                     status: true,
-                    role: true
+                    role: true,
+                    user: {
+                        select: {
+                            id: true,
+                            username: true,
+                            profile: {
+                                select: {
+                                    firstName: true,
+                                    lastName: true,
+                                    avatarUrl: true,
+                                }
+                            }
+                        }
+                    }
                 }
             }
         },
@@ -303,12 +337,14 @@ export const getAcceptedProjects = asyncHandler(async (req: AuthRequest, res: Re
         },
     });
 
-    // Map projects to include isAssigned and isInterested convenience flags
+    // Map projects to include isAssigned and isInterested convenience flags SPECIFIC to the user
+    const currentUserId = req.user?.id;
     const mappedProjects = projects.map(project => ({
         ...project,
-        isAssigned: project.assignments.some(a => ['ACTIVE', 'ACCEPTED', 'ASSIGNED'].includes(a.status)),
-        isInterested: project.assignments.some(a => a.status === 'INTERESTED'),
+        isAssigned: project.assignments.some(a => a.userId === currentUserId && ['ACTIVE', 'ACCEPTED', 'ASSIGNED'].includes(a.status)),
+        isInterested: project.assignments.some(a => a.userId === currentUserId && a.status === 'INTERESTED'),
     }));
+
 
     res.status(200).json({
         success: true,
@@ -498,21 +534,40 @@ export const getMyMissions = asyncHandler(async (req: AuthRequest, res: Response
         where: { userId },
         include: {
             project: {
-                include: {
-                    client: {
-                        select: {
-                            id: true,
-                            username: true,
-                            profile: {
+                        include: {
+                            client: {
                                 select: {
-                                    firstName: true,
-                                    lastName: true,
-                                    avatarUrl: true, jobTitle: true, city: true, country: true, metadata: true, preferences: true
+                                    id: true,
+                                    username: true,
+                                    profile: {
+                                        select: {
+                                            firstName: true,
+                                            lastName: true,
+                                            avatarUrl: true, jobTitle: true, city: true, country: true, metadata: true, preferences: true
+                                        }
+                                    }
+                                }
+                            },
+                            assignments: {
+                                where: { status: 'ACTIVE' },
+                                include: {
+                                    user: {
+                                        select: {
+                                            id: true,
+                                            username: true,
+                                            profile: {
+                                                select: {
+                                                    firstName: true,
+                                                    lastName: true,
+                                                    avatarUrl: true,
+                                                }
+                                            }
+                                        }
+                                    }
                                 }
                             }
                         }
-                    }
-                }
+
             }
         },
         orderBy: { assignedAt: 'desc' }

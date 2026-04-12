@@ -48,7 +48,14 @@ export const vetProfessional = asyncHandler(async (req: Request, res: Response) 
         data: { vettingStatus: status },
     });
 
-    // Notify User via Email
+    // Update User's primary role based on vetting status
+    if (status === 'VETTED') {
+        await prisma.user.update({
+            where: { id: profile.userId },
+            data: { role: 'PROFESSIONAL' }
+        });
+    }
+
     // Notify User via Email & In-app Notification
     const emailSubject = status === 'VETTED' ? '🎉 Congratulations! Your ProVen Profile is Verified' : 'Action Required: Your ProVen Profile Vetting';
     const clientName = profile.firstName || profile.user?.username || 'Professional';
@@ -57,6 +64,7 @@ export const vetProfessional = asyncHandler(async (req: Request, res: Response) 
     const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:3000';
     let ctaLink = frontendUrl;
     let ctaText = 'Login to Dashboard';
+
     const logoUrl = "https://proven-frontend.vercel.app/logo.png"; // Fallback URL or hosted asset
 
     if (status === 'VETTED') {
