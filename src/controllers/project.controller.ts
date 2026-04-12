@@ -549,7 +549,7 @@ export const getMyMissions = asyncHandler(async (req: AuthRequest, res: Response
                                 }
                             },
                             assignments: {
-                                where: { status: 'ACTIVE' },
+                                where: { status: { in: ['ACTIVE', 'ACCEPTED', 'INTERESTED'] } },
                                 include: {
                                     user: {
                                         select: {
@@ -565,6 +565,9 @@ export const getMyMissions = asyncHandler(async (req: AuthRequest, res: Response
                                         }
                                     }
                                 }
+                            },
+                            tasks: {
+                                orderBy: { createdAt: 'desc' }
                             }
                         }
 
