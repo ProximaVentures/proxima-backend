@@ -56,11 +56,10 @@ const allowedOrigins = [
     'http://localhost:5000',
     'https://proventures.vercel.app',
     'https://proven-app.vercel.app',
-    'https://proven-backend.onrender.com',
-    'https://proxima-backend-drl6.onrender.com',
     'https://provenworld.com',
     'https://www.provenworld.com',
     'https://api.provenworld.com',
+    'https://proxima-backend-drl6.onrender.com',
     ...(process.env.ALLOWED_ORIGINS?.split(',') || [])
 ].map(origin => origin.trim());
 
