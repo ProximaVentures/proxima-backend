@@ -18,6 +18,21 @@ enum Role {
 }
 
 enum ProfessionalCategory {
+  // New Categories
+  SOFTWARE_DEVELOPMENT
+  DIGITAL_MARKETING
+  CONTENT_CREATION
+  DESIGN_VISUAL
+  DATA_AL
+  PRODUCT_STRATEGY
+  CYBER_SECURITY
+  FINANCE_LEGAL
+  PROJECT_MANAGEMENT
+  HR_TALENT
+  CUSTOMER_SUCCESS
+  OTHER
+
+  // Old Categories (kept for backwards compatibility during migration)
   SOFTWARE_DEVELOPER
   PROJECT_MANAGER
   PRODUCT_DESIGNER

@@ -37,148 +37,24 @@ const ProjectSchema = z.object({
     link: z.string().url("Project link must be a valid URL"),
 });
 
-export const professionalProfileSchema = z.discriminatedUnion('category', [
-    // Software Developer
-    z.object({
-        category: z.literal('SOFTWARE_DEVELOPER'),
-        ...BaseProfileSchema.shape,
-        metadata: z.object({
-            developerType: z.string().optional(),
-            githubUrl: z.string().optional(),
-            portfolioUrl: z.string().optional(),
-            resumeUrl: z.string().optional(),
-            yearsOfExperience: z.number().min(0).optional(),
-            mainStack: z.array(z.string()).optional(),
-            topProjects: z.array(ProjectSchema).optional(),
-        }).passthrough().optional(),
-    }),
-
-    // Project Manager
-    z.object({
-        category: z.literal('PROJECT_MANAGER'),
-        ...BaseProfileSchema.shape,
-        metadata: z.object({
-            linkedinUrl: z.string().optional(),
-            resumeUrl: z.string().optional(),
-            certifications: z.array(z.string()).optional(),
-            toolsUsed: z.array(z.string()).optional(),
-            caseStudies: z.string().optional(),
-        }).passthrough().optional(),
-    }),
-
-    // Product Designer
-    z.object({
-        category: z.literal('PRODUCT_DESIGNER'),
-        ...BaseProfileSchema.shape,
-        metadata: z.object({
-            portfolioUrl: z.string().optional(),
-            behanceUrl: z.string().optional(),
-            dribbbleUrl: z.string().optional(),
-            tools: z.array(z.string()).optional(),
-            topProjects: z.array(ProjectSchema).optional(),
-        }).passthrough().optional(),
-    }),
-
-    // Graphic Designer
-    z.object({
-        category: z.literal('GRAPHIC_DESIGNER'),
-        ...BaseProfileSchema.shape,
-        metadata: z.object({
-            portfolioUrl: z.string().optional(),
-            instagramUrl: z.string().optional(),
-            tools: z.array(z.string()).optional(),
-        }).passthrough().optional(),
-    }),
-
-    // Content Creator
-    z.object({
-        category: z.literal('CONTENT_CREATOR'),
-        ...BaseProfileSchema.shape,
-        metadata: z.object({
-            portfolioUrl: z.string().optional(),
-            socialMediaStats: z.any().optional(),
-            niche: z.string().optional(),
-        }).passthrough().optional(),
-    }),
-
-    // 📊 Digital Marketer
-    z.object({
-        category: z.literal('DIGITAL_MARKETER'),
-        ...BaseProfileSchema.shape,
-        metadata: z.object({
-            portfolioUrl: z.string().optional(),
-            certifications: z.array(z.string()).optional(),
-            campaignBudgetsManaged: z.string().optional(),
-        }).passthrough().optional(),
-    }),
-
-    // Accountant
-    z.object({
-        category: z.literal('ACCOUNTANT'),
-        ...BaseProfileSchema.shape,
-        metadata: z.object({
-            linkedinUrl: z.string().optional(),
-            resumeUrl: z.string().optional(),
-            certifications: z.array(z.string()).optional(),
-            yearsOfExperience: z.number().optional(),
-        }).passthrough().optional(),
-    }),
-
-    // Video Editor
-    z.object({
-        category: z.literal('VIDEO_EDITOR'),
-        ...BaseProfileSchema.shape,
-        metadata: z.object({
-            portfolioUrl: z.string().optional(),
-            softwareProficiency: z.array(z.string()).optional(),
-        }).passthrough().optional(),
-    }),
-
-    // Social Media Manager
-    z.object({
-        category: z.literal('SOCIAL_MEDIA_MANAGER'),
-        ...BaseProfileSchema.shape,
-        metadata: z.object({
-            portfolioUrl: z.string().optional(),
-            platformsManaged: z.array(z.string()).optional(),
-        }).passthrough().optional(),
-    }),
-
-    // Lawyer
-    z.object({
-        category: z.literal('LAWYER'),
-        ...BaseProfileSchema.shape,
-        metadata: z.object({
-            linkedinUrl: z.string().optional(),
-            barLicenseNumber: z.string().optional(),
-            jurisdiction: z.string().optional(),
-            specialization: z.string().optional(),
-        }).passthrough().optional(),
-    }),
-
-    // HR Specialist
-    z.object({
-        category: z.literal('HR_SPECIALIST'),
-        ...BaseProfileSchema.shape,
-        metadata: z.object({
-            linkedinUrl: z.string().optional(),
-            resumeUrl: z.string().optional(),
-            certifications: z.array(z.string()).optional(),
-        }).passthrough().optional(),
-    }),
-
-    // Data Analyst
-    z.object({
-        category: z.literal('DATA_ANALYST'),
-        ...BaseProfileSchema.shape,
-        metadata: z.object({
-            githubUrl: z.string().optional(),
-            portfolioUrl: z.string().optional(),
-            tools: z.array(z.string()).optional(),
-            topProjects: z.array(ProjectSchema).optional(),
-        }).passthrough().optional(),
-    }),
-]);
+export const professionalProfileSchema = z.object({
+    category: z.enum([
+        'SOFTWARE_DEVELOPMENT',
+        'DIGITAL_MARKETING',
+        'CONTENT_CREATION',
+        'DESIGN_VISUAL',
+        'DATA_AL',
+        'PRODUCT_STRATEGY',
+        'CYBER_SECURITY',
+        'FINANCE_LEGAL',
+        'PROJECT_MANAGEMENT',
+        'HR_TALENT',
+        'CUSTOMER_SUCCESS',
+        'OTHER'
+    ]),
+    ...BaseProfileSchema.shape,
+    metadata: z.any().optional(),
+});
 
 export const loginSchema = z.object({
     email: z.string().email(),
