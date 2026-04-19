@@ -282,75 +282,84 @@ export const updateInvestmentPitch = asyncHandler(async (req: AuthRequest, res: 
 export const getAcceptedProjects = asyncHandler(async (req: AuthRequest, res: Response) => {
     // Optional: Add pagination
     const page = parseInt(req.query.page as string) || 1;
-    const limit = parseInt(req.query.limit as string) || 10;
+    const limit = parseInt(req.query.limit as string) || 4;
     const skip = (page - 1) * limit;
 
-    const type = req.query.type as string;
-
+    const { type, search } = req.query;
     const where: any = {
         status: 'ACCEPTED',
     };
 
-    if (type && type !== 'All') {
-        where.type = type.toUpperCase();
+    if (search) {
+        where.OR = [
+            { title: { contains: search as string, mode: 'insensitive' } },
+            { description: { contains: search as string, mode: 'insensitive' } },
+        ];
     }
 
-    const projects = await prisma.project.findMany({
-        where,
-        include: {
-            client: {
-                select: {
-                    id: true,
-                    username: true,
-                    profile: {
-                        select: {
-                            firstName: true,
-                            lastName: true,
-                            avatarUrl: true, jobTitle: true, city: true, country: true, metadata: true, preferences: true,
+    if (type && type !== 'All') {
+        const typeMap: any = {
+            'Test Project': 'TEST',
+            'Client Project': 'CLIENT',
+            'Ready Project': 'READY'
+        };
+        const typeStr = type as string;
+        where.type = typeMap[typeStr] || typeStr.toUpperCase();
+    }
+    const [projects, total] = await Promise.all([
+        prisma.project.findMany({
+            where,
+            include: {
+                client: {
+                    select: {
+                        id: true,
+                        username: true,
+                        profile: {
+                            select: {
+                                firstName: true,
+                                lastName: true,
+                                avatarUrl: true, jobTitle: true, city: true, country: true, metadata: true, preferences: true,
+                            }
                         }
                     }
-                }
-            },
-            assignments: {
-                select: {
-                    userId: true,
-                    status: true,
-                    role: true,
-                    user: {
-                        select: {
-                            id: true,
-                            username: true,
-                            profile: {
-                                select: {
-                                    firstName: true,
-                                    lastName: true,
-                                    avatarUrl: true,
+                },
+                assignments: {
+                    select: {
+                        userId: true,
+                        status: true,
+                        role: true,
+                        user: {
+                            select: {
+                                id: true,
+                                username: true,
+                                profile: {
+                                    select: {
+                                        firstName: true,
+                                        lastName: true,
+                                        avatarUrl: true,
+                                    }
                                 }
                             }
                         }
                     }
                 }
-            }
-        },
-        orderBy: {
-            createdAt: 'desc',
-        },
-        skip,
-        take: limit,
-    });
-
-    const total = await prisma.project.count({
-        where,
-    });
+            },
+            orderBy: {
+                createdAt: 'desc'
+            },
+            skip,
+            take: limit
+        }),
+        prisma.project.count({ where })
+    ]);
 
     // Map projects to include isAssigned and isInterested convenience flags SPECIFIC to the user
     const currentUserId = req.user?.id;
     const mappedProjects = projects.map(project => ({
         ...project,
-        isAssigned: project.assignments.some(a => a.userId === currentUserId && ['ACTIVE', 'ACCEPTED', 'ASSIGNED'].includes(a.status)),
-        isInterested: project.assignments.some(a => a.userId === currentUserId && a.status === 'INTERESTED'),
+        isAssigned: project.assignments.some(a => (a.userId === currentUserId) && ['ACTIVE', 'ACCEPTED', 'ASSIGNED'].includes(a.status)),
+        isInterested: project.assignments.some(a => (a.userId === currentUserId) && a.status === 'INTERESTED'),
     }));
-
 
     res.status(200).json({
         success: true,
@@ -358,7 +367,7 @@ export const getAcceptedProjects = asyncHandler(async (req: AuthRequest, res: Re
         total,
         page,
         totalPages: Math.ceil(total / limit),
-        data: mappedProjects,
+        projects: mappedProjects,
     });
 });
 /**
