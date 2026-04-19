@@ -85,6 +85,12 @@ enum TimelineTier {
   ABOVE_6_MONTHS
 }
 
+enum ProjectType {
+  CLIENT
+  TEST
+  READY
+}
+
 // ────────── NEW ENUMS for Client Dashboard ──────────
 
 enum SprintStatus {
@@ -202,6 +208,9 @@ model Project {
   budgetRange    BudgetTier
   timeline       TimelineTier
   coverImageUrl  String?
+  demoVideoUrl   String?
+  usefulLinks    Json?         @default("[]")
+  type           ProjectType   @default(CLIENT)
   category       String        @default("Technology & Software")
   categoryData   Json?         @default("{}")
   status         ProjectStatus @default(PENDING)

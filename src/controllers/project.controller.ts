@@ -285,10 +285,18 @@ export const getAcceptedProjects = asyncHandler(async (req: AuthRequest, res: Re
     const limit = parseInt(req.query.limit as string) || 10;
     const skip = (page - 1) * limit;
 
+    const type = req.query.type as string;
+
+    const where: any = {
+        status: 'ACCEPTED',
+    };
+
+    if (type && type !== 'All') {
+        where.type = type.toUpperCase();
+    }
+
     const projects = await prisma.project.findMany({
-        where: {
-            status: 'ACCEPTED',
-        },
+        where,
         include: {
             client: {
                 select: {
@@ -332,9 +340,7 @@ export const getAcceptedProjects = asyncHandler(async (req: AuthRequest, res: Re
     });
 
     const total = await prisma.project.count({
-        where: {
-            status: 'ACCEPTED',
-        },
+        where,
     });
 
     // Map projects to include isAssigned and isInterested convenience flags SPECIFIC to the user

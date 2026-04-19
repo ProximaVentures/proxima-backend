@@ -1688,3 +1688,54 @@ export const getProjectById = asyncHandler(async (req: Request, res: Response) =
         data: projectWithCount
     });
 });
+
+/**
+ * Create Admin Project (TEST / READY / CLIENT)
+ */
+export const createAdminProject = asyncHandler(async (req: AuthRequest, res: Response) => {
+    const userId = req.user?.id;
+    if (!userId) throw new AppError('Unauthorized', 401);
+
+    const { 
+        title, 
+        description, 
+        category, 
+        coverImageUrl, 
+        demoVideoUrl, 
+        usefulLinks, 
+        type,
+        targetAudience,
+        budgetRange,
+        timeline,
+        status
+    } = req.body;
+
+    if (!title || !description) {
+        throw new AppError('Title and description are required', 400);
+    }
+
+    const project = await prisma.project.create({
+        data: {
+            title,
+            description,
+            category: category || 'Technology & Software',
+            coverImageUrl,
+            demoVideoUrl,
+            usefulLinks: usefulLinks || [],
+            type: type || 'TEST',
+            status: status || 'ACCEPTED', // Admin projects are accepted by default
+            clientId: userId, // Created by admin
+            targetAudience: targetAudience || 'General',
+            industry: [],
+            requirements: 'As specified by admin',
+            budgetRange: budgetRange || 'UNDER_5K',
+            timeline: timeline || 'UNDER_1_MONTH',
+        }
+    });
+
+    res.status(201).json({
+        success: true,
+        message: 'Admin project created successfully',
+        data: project
+    });
+});
