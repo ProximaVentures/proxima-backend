@@ -219,7 +219,6 @@ export const completeProfile = asyncHandler(async (req: AuthRequest, res: Respon
                 preferences,
                 onboardingComplete: true,
                 vettingStatus: isAlreadyVetted ? 'VETTED' : 'PENDING',
-                vettingAt: isAlreadyVetted ? existingProfile?.vettingAt : null,
             },
         });
 
