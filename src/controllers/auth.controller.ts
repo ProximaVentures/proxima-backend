@@ -201,6 +201,9 @@ export const completeProfile = asyncHandler(async (req: AuthRequest, res: Respon
     if (!userId) throw new AppError('User not authenticated', 401);
 
     const updatedProfile = await prisma.$transaction(async (tx) => {
+        const existingProfile = await tx.profile.findUnique({ where: { userId } });
+        const isAlreadyVetted = existingProfile?.vettingStatus === 'VETTED';
+
         const profile = await tx.profile.update({
             where: { userId },
             data: {
@@ -215,7 +218,8 @@ export const completeProfile = asyncHandler(async (req: AuthRequest, res: Respon
                 metadata,
                 preferences,
                 onboardingComplete: true,
-                vettingStatus: 'PENDING',
+                vettingStatus: isAlreadyVetted ? 'VETTED' : 'PENDING',
+                vettingAt: isAlreadyVetted ? existingProfile?.vettingAt : null,
             },
         });
 
