@@ -51,7 +51,7 @@ export const professionalProfileSchema = z.object({
         'HR_TALENT',
         'CUSTOMER_SUCCESS',
         'OTHER'
-    ]),
+    ]).optional(),
     ...BaseProfileSchema.shape,
     metadata: z.any().optional(),
 });
