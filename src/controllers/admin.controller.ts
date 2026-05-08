@@ -1739,3 +1739,60 @@ export const createAdminProject = asyncHandler(async (req: AuthRequest, res: Res
         data: project
     });
 });
+
+/**
+ * Update Project (Admin)
+ */
+export const updateProject = asyncHandler(async (req: AuthRequest, res: Response) => {
+    const { id } = req.params as { id: string };
+    const data = req.body;
+
+    // Check if project exists
+    const existingProject = await prisma.project.findUnique({
+        where: { id }
+    });
+
+    if (!existingProject) {
+        throw new AppError('Project not found', 404);
+    }
+
+    // Prepare update data — remove undefined and handle nested objects if necessary
+    const updateData: any = {};
+    const allowedFields = [
+        'title', 'description', 'category', 'coverImageUrl', 
+        'demoVideoUrl', 'usefulLinks', 'type', 'status',
+        'targetAudience', 'budgetRange', 'timeline', 'priority'
+    ];
+
+    Object.keys(data).forEach(key => {
+        if (allowedFields.includes(key) && data[key] !== undefined) {
+            updateData[key] = data[key];
+        }
+    });
+
+    const project = await prisma.project.update({
+        where: { id },
+        data: updateData,
+        include: {
+            client: {
+                select: {
+                    id: true,
+                    username: true,
+                    profile: {
+                        select: {
+                            firstName: true,
+                            lastName: true,
+                            avatarUrl: true
+                        }
+                    }
+                }
+            }
+        }
+    });
+
+    res.status(200).json({
+        success: true,
+        message: 'Project updated successfully',
+        data: project
+    });
+});
