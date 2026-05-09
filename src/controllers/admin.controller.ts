@@ -1761,7 +1761,8 @@ export const updateProject = asyncHandler(async (req: AuthRequest, res: Response
     const allowedFields = [
         'title', 'description', 'category', 'coverImageUrl', 
         'demoVideoUrl', 'usefulLinks', 'type', 'status',
-        'targetAudience', 'budgetRange', 'timeline', 'priority'
+        'targetAudience', 'budgetRange', 'timeline', 'industry',
+        'requirements', 'specificNotes'
     ];
 
     Object.keys(data).forEach(key => {
