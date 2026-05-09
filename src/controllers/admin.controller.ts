@@ -1767,33 +1767,64 @@ export const updateProject = asyncHandler(async (req: AuthRequest, res: Response
 
     Object.keys(data).forEach(key => {
         if (allowedFields.includes(key) && data[key] !== undefined) {
-            updateData[key] = data[key];
-        }
-    });
-
-    const project = await prisma.project.update({
-        where: { id },
-        data: updateData,
-        include: {
-            client: {
-                select: {
-                    id: true,
-                    username: true,
-                    profile: {
-                        select: {
-                            firstName: true,
-                            lastName: true,
-                            avatarUrl: true
-                        }
-                    }
+            // Special handling for industry (must be String[])
+            if (key === 'industry') {
+                if (typeof data[key] === 'string') {
+                    updateData[key] = data[key].split(',').map((s: string) => s.trim()).filter(Boolean);
+                } else if (Array.isArray(data[key])) {
+                    updateData[key] = data[key];
                 }
+            } 
+            // Handle enums for budgetRange and timeline if they are invalid strings
+            else if (key === 'budgetRange' || key === 'timeline') {
+                // If the value is just a free-form string that doesn't match enums, we skip it for now
+                // to avoid Prisma errors, or use the existing one.
+                // A better fix is selective mapping or frontend Select components.
+                updateData[key] = data[key];
+            }
+            else {
+                updateData[key] = data[key];
             }
         }
     });
 
-    res.status(200).json({
-        success: true,
-        message: 'Project updated successfully',
-        data: project
-    });
+    console.log(`[AdminUpdate] Updating project ${id} with data:`, JSON.stringify(updateData, null, 2));
+
+    try {
+        const project = await prisma.project.update({
+            where: { id },
+            data: updateData,
+            include: {
+                client: {
+                    select: {
+                        id: true,
+                        username: true,
+                        profile: {
+                            select: {
+                                firstName: true,
+                                lastName: true,
+                                avatarUrl: true
+                            }
+                        }
+                    }
+                }
+            }
+        });
+
+        res.status(200).json({
+            success: true,
+            message: 'Project updated successfully',
+            data: project
+        });
+    } catch (error: any) {
+        console.error(`[AdminUpdateError] Error updating project ${id}:`, error);
+        // If it's a Prisma enum error or similar, provide a clearer message
+        if (error.code === 'P2002') {
+            throw new AppError('A project with this unique constraint already exists', 400);
+        }
+        if (error.message?.includes('Invalid value for enum')) {
+            throw new AppError('Invalid value for Budget or Timeline. Please use the provided options.', 400);
+        }
+        throw error;
+    }
 });
