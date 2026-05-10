@@ -1,7 +1,7 @@
 import type { Request, Response } from 'express';
 import { asyncHandler, AppError } from '../middleware/error.middleware.js';
 import prisma from '../utils/prisma.js';
-import { sendEmail } from '../utils/email.js';
+import { sendEmail, EmailSender } from '../utils/email.js';
 import { Role } from '@prisma/client';
 import type { AuthRequest } from '../interfaces/auth.interface.js';
 
@@ -166,7 +166,7 @@ export const vetProfessional = asyncHandler(async (req: Request, res: Response) 
     console.log(`[Admin] Attempting to send ${status === 'VETTED' ? 'approval' : 'rejection'} email to: ${profile.user?.email}`);
     if (profile.user && profile.user.email) {
         try {
-            const emailResult = await sendEmail(profile.user.email, emailSubject, emailHtmlBody);
+            const emailResult = await sendEmail(profile.user.email, emailSubject, emailHtmlBody, EmailSender.INFO);
             console.log(`[Admin] Email send result: ${emailResult ? 'SUCCESS' : 'FAILURE'}`);
         } catch (emailError) {
             console.error('[Admin] Welcome/Reject email failed to send:', emailError);
@@ -384,7 +384,7 @@ export const updateProjectStatus = asyncHandler(async (req: Request, res: Respon
                 </html>
             `;
 
-            const emailSent = await sendEmail(project.client.email, subject, html);
+            const emailSent = await sendEmail(project.client.email, subject, html, EmailSender.INFO);
         } catch (emailError) {
             console.error(`[Admin] Email sending failed (non-blocking):`, emailError);
             // Don't throw — status was updated successfully, email is secondary
@@ -447,7 +447,31 @@ export const assignProfessional = asyncHandler(async (req: Request, res: Respons
     });
 
     // Notify Professional
-    // await sendEmail(professional.email, "New Project Assignment", `You have been assigned to project...`);
+    if (professional.email) {
+        const project = await prisma.project.findUnique({ where: { id } });
+        await sendEmail(
+            professional.email, 
+            `🎉 You've been assigned to: ${project?.title}`, 
+            `
+            <div style="font-family: sans-serif; max-width: 600px; margin: auto; padding: 32px; border: 1px solid #e2e8f0; border-radius: 24px; background-color: #ffffff;">
+                <h2 style="color: #0f172a; margin-bottom: 24px;">Project Assignment</h2>
+                <p style="font-size: 16px; color: #334155; line-height: 1.6;">Hello <strong>${professional.username}</strong>,<br><br>We are pleased to inform you that you have been officially assigned to the project "<strong>${project?.title}</strong>".</p>
+                
+                <div style="background-color: #f8fafc; padding: 24px; border-radius: 16px; margin: 24px 0; border: 1px solid #f1f5f9;">
+                    <p style="margin: 0 0 12px 0;"><strong>Role:</strong> ${role || 'Contributor'}</p>
+                    <p style="margin: 0;"><strong>Status:</strong> Active</p>
+                </div>
+
+                <div style="text-align: center; margin-top: 32px;">
+                    <a href="${process.env.FRONTEND_URL}/dashboard/professional/projects/${id}" style="display: inline-block; background-color: #f97316; color: #ffffff; padding: 14px 28px; border-radius: 10px; font-weight: 700; text-decoration: none; font-size: 14px;">Access Project Board</a>
+                </div>
+
+                <p style="font-size: 14px; color: #64748b; margin-top: 32px;">Please review the project brief and resources in your dashboard to begin execution.</p>
+            </div>
+            `,
+            EmailSender.SUPPORT
+        ).catch(err => console.error('[Assign Email] Failed:', err));
+    }
 
     res.status(201).json({
         success: true,
@@ -764,9 +788,40 @@ export const declineInterest = asyncHandler(async (req: Request, res: Response) 
         throw new AppError('Cannot decline an active assignment', 400);
     }
 
+    const assignmentWithUser = await prisma.projectAssignment.findUnique({
+        where: { id },
+        include: { 
+            user: { select: { email: true, username: true } },
+            project: { select: { title: true } }
+        }
+    });
+
     await prisma.projectAssignment.delete({
         where: { id }
     });
+
+    // Notify Professional politely
+    if (assignmentWithUser?.user?.email) {
+        await sendEmail(
+            assignmentWithUser.user.email,
+            `Update on your interest: ${assignmentWithUser.project.title}`,
+            `
+            <div style="font-family: sans-serif; max-width: 600px; margin: auto; padding: 32px; border: 1px solid #e2e8f0; border-radius: 12px; background-color: #ffffff;">
+                <h2 style="color: #0f172a; margin-bottom: 24px;">Project Interest Update</h2>
+                <p style="font-size: 16px; color: #334155; line-height: 1.6;">Hello <strong>${assignmentWithUser.user.username}</strong>,<br><br>Thank you for expressing interest in the project "<strong>${assignmentWithUser.project.title}</strong>".</p>
+                
+                <p style="font-size: 16px; color: #334155; line-height: 1.6;">After careful review of the current team requirements, we have decided to move forward with other candidates for this specific project at this time.</p>
+
+                <div style="background-color: #f8fafc; padding: 20px; border-radius: 12px; margin: 24px 0; border: 1px solid #f1f5f9;">
+                    <p style="font-size: 14px; color: #64748b; margin: 0;">Your profile remains in our elite pool, and we will notify you when other opportunities matching your expertise become available.</p>
+                </div>
+
+                <p style="font-size: 14px; color: #64748b;">Thank you for being part of the ProVen professional network.</p>
+            </div>
+            `,
+            EmailSender.SUPPORT
+        ).catch(err => console.error('[Decline Interest Email] Failed:', err));
+    }
 
     res.status(200).json({
         success: true,
@@ -815,7 +870,8 @@ export const addProjectResource = asyncHandler(async (req: Request, res: Respons
                 await sendEmail(
                     pro.email,
                     `📁 New Resource: ${title}`,
-                    `A new resource has been added to your project <strong>${resource.project.title}</strong>.<br><br><strong>Title:</strong> ${title}<br><strong>Type:</strong> ${resource.type}<br><br><a href="${process.env.FRONTEND_URL}/dashboard/professional/projects/${projectId}">View Project</a>`
+                    `A new resource has been added to your project <strong>${resource.project.title}</strong>.<br><br><strong>Title:</strong> ${title}<br><strong>Type:</strong> ${resource.type}<br><br><a href="${process.env.FRONTEND_URL}/dashboard/professional/projects/${projectId}">View Project</a>`,
+                    EmailSender.SUPPORT
                 ).catch(err => console.error('[Notify Resource] Email failed:', err));
             }
         }
@@ -905,13 +961,12 @@ export const addProjectUpdate = asyncHandler(async (req: AuthRequest, res: Respo
                     link: `/dashboard/professional/projects/${projectId}`
                 }
             });
-            if (pro.email) {
                 await sendEmail(
                     pro.email,
                     `${isUrgent ? '🚨' : '📝'} Project Update: ${title}`,
-                    `A new update has been posted for <strong>${update.project.title}</strong>.<br><br><strong>Title:</strong> ${title}<br><strong>Urgency:</strong> ${isUrgent ? 'High' : 'Normal'}<br><br><a href="${process.env.FRONTEND_URL}/dashboard/professional/projects/${projectId}">Read Update</a>`
+                    `A new update has been posted for <strong>${update.project.title}</strong>.<br><br><strong>Title:</strong> ${title}<br><strong>Urgency:</strong> ${isUrgent ? 'High' : 'Normal'}<br><br><a href="${process.env.FRONTEND_URL}/dashboard/professional/projects/${projectId}">Read Update</a>`,
+                    EmailSender.SUPPORT
                 ).catch(err => console.error('[Notify Update] Email failed:', err));
-            }
         }
     } catch (notifyErr) {
         console.error('[Notify Update] Notification failed (non-blocking):', notifyErr);
@@ -1130,13 +1185,12 @@ export const addProjectMeeting = asyncHandler(async (req: Request, res: Response
                         link: `/dashboard/professional/projects/${projectId}`
                     }
                 });
-                if (user.email) {
                     await sendEmail(
                         user.email,
                         `📅 Meeting Invitation: ${title}`,
-                        `You have been invited to a meeting for <strong>${meeting.project.title}</strong>.<br><br><strong>Title:</strong> ${title}<br><strong>Time:</strong> ${new Date(startTime).toLocaleString()}<br><br><a href="${process.env.FRONTEND_URL}/dashboard/professional/projects/${projectId}">Join from Dashboard</a>`
+                        `You have been invited to a meeting for <strong>${meeting.project.title}</strong>.<br><br><strong>Title:</strong> ${title}<br><strong>Time:</strong> ${new Date(startTime).toLocaleString()}<br><br><a href="${process.env.FRONTEND_URL}/dashboard/professional/projects/${projectId}">Join from Dashboard</a>`,
+                        EmailSender.SUPPORT
                     ).catch(err => console.error('[Notify Meeting] Email failed:', err));
-                }
             }
         }
     } catch (notifyErr) {
@@ -1246,13 +1300,12 @@ export const addProjectDocument = asyncHandler(async (req: Request, res: Respons
                         link: `/dashboard/professional/projects/${projectId}`
                     }
                 });
-                if (user.email) {
                     await sendEmail(
                         user.email,
                         `📄 New Document: ${title}`,
-                        `A new document has been shared with you for <strong>${document.project.title}</strong>.<br><br><strong>Title:</strong> ${title}<br><br><a href="${process.env.FRONTEND_URL}/dashboard/professional/projects/${projectId}">View Project</a>`
+                        `A new document has been shared with you for <strong>${document.project.title}</strong>.<br><br><strong>Title:</strong> ${title}<br><br><a href="${process.env.FRONTEND_URL}/dashboard/professional/projects/${projectId}">View Project</a>`,
+                        EmailSender.SUPPORT
                     ).catch(err => console.error('[Notify Document] Email failed:', err));
-                }
             }
         }
     } catch (notifyErr) {
@@ -1372,13 +1425,12 @@ export const addProjectTask = asyncHandler(async (req: Request, res: Response) =
                         link: `/dashboard/professional/projects/${projectId}`
                     }
                 });
-                if (user.email) {
                     await sendEmail(
                         user.email,
                         `✅ New Task: ${title}`,
-                        `You have a new task for <strong>${task.project.title}</strong>.<br><br><strong>Task:</strong> ${title}<br><strong>Priority:</strong> ${priority || 'MEDIUM'}<br><strong>Due Date:</strong> ${dueDate ? new Date(dueDate).toLocaleDateString() : 'N/A'}<br><br><a href="${process.env.FRONTEND_URL}/dashboard/professional/projects/${projectId}">View Task</a>`
+                        `You have a new task for <strong>${task.project.title}</strong>.<br><br><strong>Task:</strong> ${title}<br><strong>Priority:</strong> ${priority || 'MEDIUM'}<br><strong>Due Date:</strong> ${dueDate ? new Date(dueDate).toLocaleDateString() : 'N/A'}<br><br><a href="${process.env.FRONTEND_URL}/dashboard/professional/projects/${projectId}">View Task</a>`,
+                        EmailSender.SUPPORT
                     ).catch(err => console.error('[Notify Task] Email failed:', err));
-                }
             }
         }
     } catch (notifyErr) {
@@ -1500,30 +1552,31 @@ export const reviewTask = asyncHandler(async (req: Request, res: Response) => {
                 // Email Notification
                 if (user.email) {
                     const statusText = status === 'DONE' ? 'ACCEPTED' : status === 'DO_AGAIN' ? 'REQUIRES RE-PROCESSING' : 'REJECTED';
-                    await sendEmail(
-                        user.email,
-                        `🛠️ Task Review: ${task.title}`,
-                        `
-                        <div style="font-family: sans-serif; color: #1e293b; max-width: 600px; margin: auto; border: 1px solid #e2e8f0; border-radius: 12px; padding: 32px;">
-                            <h2 style="color: #0f172a; margin-bottom: 24px;">Mission Update: ${task.title}</h2>
-                            <p style="font-size: 14px; color: #64748b; text-transform: uppercase; font-weight: 700; tracking: 0.1em; margin-bottom: 8px;">Verdict</p>
-                            <div style="background-color: ${status === 'DONE' ? '#f0fdf4' : '#fef2f2'}; color: ${status === 'DONE' ? '#166534' : '#991b1b'}; padding: 12px 16px; border-radius: 8px; display: inline-block; font-weight: 800; font-size: 14px; border: 1px solid ${status === 'DONE' ? '#dcfce7' : '#fee2e2'}; margin-bottom: 24px;">
-                                ${statusText}
-                            </div>
-                            
-                            ${feedback ? `
-                            <div style="background-color: #f8fafc; border: 1px solid #e2e8f0; padding: 20px; border-radius: 12px; margin-bottom: 24px;">
-                                <p style="font-size: 12px; color: #94a3b8; text-transform: uppercase; font-weight: 800; margin-bottom: 12px;">Operational Feedback from HQ</p>
-                                <p style="font-size: 16px; font-style: italic; color: #334155; line-height: 1.6;">"${feedback}"</p>
-                            </div>
-                            ` : ''}
+                        await sendEmail(
+                            user.email,
+                            `🛠️ Task Review: ${task.title}`,
+                            `
+                            <div style="font-family: sans-serif; color: #1e293b; max-width: 600px; margin: auto; border: 1px solid #e2e8f0; border-radius: 12px; padding: 32px;">
+                                <h2 style="color: #0f172a; margin-bottom: 24px;">Mission Update: ${task.title}</h2>
+                                <p style="font-size: 14px; color: #64748b; text-transform: uppercase; font-weight: 700; tracking: 0.1em; margin-bottom: 8px;">Verdict</p>
+                                <div style="background-color: ${status === 'DONE' ? '#f0fdf4' : '#fef2f2'}; color: ${status === 'DONE' ? '#166534' : '#991b1b'}; padding: 12px 16px; border-radius: 8px; display: inline-block; font-weight: 800; font-size: 14px; border: 1px solid ${status === 'DONE' ? '#dcfce7' : '#fee2e2'}; margin-bottom: 24px;">
+                                    ${statusText}
+                                </div>
+                                
+                                ${feedback ? `
+                                <div style="background-color: #f8fafc; border: 1px solid #e2e8f0; padding: 20px; border-radius: 12px; margin-bottom: 24px;">
+                                    <p style="font-size: 12px; color: #94a3b8; text-transform: uppercase; font-weight: 800; margin-bottom: 12px;">Operational Feedback from HQ</p>
+                                    <p style="font-size: 16px; font-style: italic; color: #334155; line-height: 1.6;">"${feedback}"</p>
+                                </div>
+                                ` : ''}
 
-                            <div style="margin-top: 32px;">
-                                <a href="${process.env.FRONTEND_URL}/dashboard/professional/projects/${task.projectId}" style="background-color: #0f172a; color: #ffffff; padding: 12px 24px; border-radius: 8px; text-decoration: none; font-weight: 700; font-size: 14px; display: inline-block;">View Board</a>
+                                <div style="margin-top: 32px;">
+                                    <a href="${process.env.FRONTEND_URL}/dashboard/professional/projects/${task.projectId}" style="background-color: #0f172a; color: #ffffff; padding: 12px 24px; border-radius: 8px; text-decoration: none; font-weight: 700; font-size: 14px; display: inline-block;">View Board</a>
+                                </div>
                             </div>
-                        </div>
-                        `
-                    ).catch(err => console.error('[Review Email] Failed:', err));
+                            `,
+                            EmailSender.SUPPORT
+                        ).catch(err => console.error('[Review Email] Failed:', err));
                 }
             }
         }

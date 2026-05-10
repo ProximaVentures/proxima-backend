@@ -12,6 +12,9 @@ export const projectSchema = z.object({
 });
 
 export const investmentPitchSchema = z.object({
+    companyName: z.string().min(2, "Company name is required"),
+    industry: z.string().optional(),
+    stage: z.string().optional(),
     problemStatement: z.string().min(50),
     proposedSolution: z.string().min(50),
     usp: z.string().min(20),

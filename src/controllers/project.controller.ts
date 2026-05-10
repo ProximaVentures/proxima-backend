@@ -2,6 +2,8 @@ import type { Response } from 'express';
 import { asyncHandler, AppError } from '../middleware/error.middleware.js';
 import type { AuthRequest } from '../interfaces/auth.interface.js';
 import prisma from '../utils/prisma.js';
+import { sendEmail, EmailSender } from '../utils/email.js';
+
 import type { ProjectInput, InvestmentPitchInput } from '../validators/project.validator.js';
 import { BudgetTier, TimelineTier } from '@prisma/client';
 
@@ -35,7 +37,7 @@ const mapTimeline = (timeline: string): TimelineTier => {
 /**
  * Remove undefined properties from an object to satisfy exactOptionalPropertyTypes
  */
-const cleanData = <T extends Record<string, any>>(data: T): T => {
+const cleanData = <T extends Record<string, any>>(data: T): any => {
     const cleaned: any = {};
     for (const key of Object.keys(data)) {
         if (data[key] !== undefined) {
@@ -51,6 +53,9 @@ const cleanData = <T extends Record<string, any>>(data: T): T => {
 export const createProject = asyncHandler(async (req: AuthRequest, res: Response) => {
     const userId = req.user?.id;
     if (!userId) throw new AppError('Unauthorized', 401);
+
+    const user = await prisma.user.findUnique({ where: { id: userId } });
+    if (!user) throw new AppError('User not found', 404);
 
     // Check project limit (max 3)
     const [projectCount, pitchCount] = await Promise.all([
@@ -88,8 +93,51 @@ export const createProject = asyncHandler(async (req: AuthRequest, res: Response
                     }]
                 }
             } : {})
-        } as any,
+        }
     });
+
+    // Notify Admin of new project submission
+    const adminEmail = process.env.ADMIN_RECEIVE_EMAIL || 'info@provenworld.com';
+    await sendEmail(
+        adminEmail,
+        `🚀 New Project Submission: ${data.title}`,
+        `
+        <div style="font-family: sans-serif; max-width: 600px; margin: auto; padding: 32px; border: 1px solid #e2e8f0; border-radius: 24px; background-color: #ffffff;">
+            <h2 style="color: #0f172a; margin-bottom: 24px;">New Project Submission</h2>
+            <p style="font-size: 16px; color: #334155;">A new project has been submitted on the ProVen Platform.</p>
+            
+            <div style="background-color: #f8fafc; padding: 24px; border-radius: 16px; margin: 24px 0; border: 1px solid #f1f5f9;">
+                <p style="margin: 0 0 12px 0;"><strong>Title:</strong> ${data.title}</p>
+                <p style="margin: 0 0 12px 0;"><strong>Client ID:</strong> ${userId}</p>
+                <p style="margin: 0 0 12px 0;"><strong>Timeline:</strong> ${data.timeline}</p>
+                <p style="margin: 0;"><strong>Brief:</strong> ${data.briefUrl ? 'Uploaded' : 'No brief provided'}</p>
+            </div>
+
+            <p style="font-size: 14px; color: #64748b;">Please review this submission in the Admin Dashboard.</p>
+        </div>
+        `,
+        EmailSender.INFO
+    ).catch(err => console.error('[Admin Project Notification] Failed:', err));
+
+    // Send confirmation to Client
+    await sendEmail(
+        user.email,
+        `ProVen | Project Submission Received: ${data.title}`,
+        `
+        <div style="font-family: sans-serif; max-width: 600px; margin: auto; border: 1px solid #e2e8f0; border-radius: 12px; padding: 32px;">
+            <h2 style="color: #0f172a; margin-bottom: 24px;">Project Received</h2>
+            <p style="font-size: 16px; color: #334155; line-height: 1.6;">Hello <strong>${user.username}</strong>,<br><br>Thank you for submitting your project "<strong>${data.title}</strong>" to ProVen. We have received your submission and our team is currently performing the initial review.</p>
+            
+            <div style="background-color: #f8fafc; border: 1px solid #e2e8f0; padding: 20px; border-radius: 12px; margin: 24px 0;">
+                <p style="font-size: 12px; color: #94a3b8; text-transform: uppercase; font-weight: 800; margin-bottom: 8px;">Next Steps</p>
+                <p style="font-size: 14px; color: #64748b; margin: 0;">1. Our analysts will review your brief within 24-48 hours.<br>2. You will receive an email once the project status is updated.<br>3. If approved, we will begin the professional vetting and assignment phase.</p>
+            </div>
+
+            <p style="font-size: 14px; color: #64748b;">Thank you for choosing ProVen for your execution infrastructure.</p>
+        </div>
+        `,
+        EmailSender.INFO
+    ).catch(err => console.error('[Client Project Confirmation] Failed:', err));
 
     res.status(201).json({
         success: true,
@@ -104,6 +152,9 @@ export const createProject = asyncHandler(async (req: AuthRequest, res: Response
 export const createInvestmentPitch = asyncHandler(async (req: AuthRequest, res: Response) => {
     const userId = req.user?.id;
     if (!userId) throw new AppError('Unauthorized', 401);
+
+    const user = await prisma.user.findUnique({ where: { id: userId } });
+    if (!user) throw new AppError('User not found', 404);
 
     // Check project limit (max 3)
     const [projectCount, pitchCount] = await Promise.all([
@@ -121,8 +172,51 @@ export const createInvestmentPitch = asyncHandler(async (req: AuthRequest, res: 
         data: cleanData({
             ...data,
             clientId: userId,
-        }) as any,
+        })
     });
+
+    // Notify Admin of new investment pitch
+    const adminEmail = process.env.ADMIN_RECEIVE_EMAIL || 'info@provenworld.com';
+    await sendEmail(
+        adminEmail,
+        `💎 New Investment Pitch: ${data.companyName}`,
+        `
+        <div style="font-family: sans-serif; max-width: 600px; margin: auto; padding: 32px; border: 1px solid #e2e8f0; border-radius: 24px; background-color: #ffffff;">
+            <h2 style="color: #0f172a; margin-bottom: 24px;">New Investment Pitch</h2>
+            <p style="font-size: 16px; color: #334155;">A new investment pitch has been submitted for review.</p>
+            
+            <div style="background-color: #f8fafc; padding: 24px; border-radius: 16px; margin: 24px 0; border: 1px solid #f1f5f9;">
+                <p style="margin: 0 0 12px 0;"><strong>Company:</strong> ${data.companyName}</p>
+                <p style="margin: 0 0 12px 0;"><strong>Industry:</strong> ${data.industry}</p>
+                <p style="margin: 0 0 12px 0;"><strong>Stage:</strong> ${data.stage}</p>
+                <p style="margin: 0;"><strong>Client ID:</strong> ${userId}</p>
+            </div>
+
+            <p style="font-size: 14px; color: #64748b;">Please review the full pitch details in the Admin Dashboard.</p>
+        </div>
+        `,
+        EmailSender.INFO
+    ).catch(err => console.error('[Admin Pitch Notification] Failed:', err));
+
+    // Send confirmation to Client
+    await sendEmail(
+        user.email,
+        `ProVen | Investment Pitch Received: ${data.companyName}`,
+        `
+        <div style="font-family: sans-serif; max-width: 600px; margin: auto; border: 1px solid #e2e8f0; border-radius: 12px; padding: 32px;">
+            <h2 style="color: #0f172a; margin-bottom: 24px;">Pitch Received</h2>
+            <p style="font-size: 16px; color: #334155; line-height: 1.6;">Hello <strong>${user.username}</strong>,<br><br>Your investment pitch for "<strong>${data.companyName}</strong>" has been successfully uploaded to the ProVen platform.</p>
+            
+            <div style="background-color: #f8fafc; border: 1px solid #e2e8f0; padding: 20px; border-radius: 12px; margin: 24px 0;">
+                <p style="font-size: 12px; color: #94a3b8; text-transform: uppercase; font-weight: 800; margin-bottom: 8px;">Review Timeline</p>
+                <p style="font-size: 14px; color: #64748b; margin: 0;">Our investment committee reviews pitches on a rolling basis. You will be notified via email of any status changes or if additional documentation is required.</p>
+            </div>
+
+            <p style="font-size: 14px; color: #64748b;">Best regards,<br>The ProVen Investment Relations Team</p>
+        </div>
+        `,
+        EmailSender.INFO
+    ).catch(err => console.error('[Client Pitch Confirmation] Failed:', err));
 
     res.status(201).json({
         success: true,

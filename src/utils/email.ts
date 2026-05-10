@@ -9,26 +9,41 @@ const getResend = () => {
 };
 
 /**
+ * Email Sender Types
+ */
+export enum EmailSender {
+  INFO = 'INFO',
+  ADMIN = 'ADMIN',
+  SUPPORT = 'SUPPORT'
+}
+
+/**
  * Generic Email Sender via Resend API
  */
-export const sendEmail = async (to: string, subject: string, html: string) => {
-  const fromValue = process.env.EMAIL_FROM;
+export const sendEmail = async (to: string, subject: string, html: string, sender: EmailSender = EmailSender.INFO) => {
+  let fromValue = '';
   
-  if (!fromValue) {
-    console.error('[🚨 RESEND FAILED]: EMAIL_FROM is missing in .env');
-    return false;
+  switch (sender) {
+    case EmailSender.ADMIN:
+      fromValue = process.env.EMAIL_FROM_ADMIN || process.env.EMAIL_FROM || 'admin@provenworld.com';
+      break;
+    case EmailSender.SUPPORT:
+      fromValue = process.env.EMAIL_FROM_SUPPORT || process.env.EMAIL_FROM || 'support@provenworld.com';
+      break;
+    default:
+      fromValue = process.env.EMAIL_FROM_INFO || process.env.EMAIL_FROM || 'info@provenworld.com';
   }
-
+  
   if (!process.env.RESEND_API_KEY) {
     console.error('[🚨 RESEND FAILED]: RESEND_API_KEY is missing in .env');
     return false;
   }
 
-  console.log(`[📩 SENDING EMAIL]: to: ${to}, subject: ${subject}, from: ${fromValue}`);
+  console.log(`[📩 SENDING EMAIL]: to: ${to}, subject: ${subject}, from: ${fromValue} (${sender})`);
 
   try {
     const { data, error } = await getResend().emails.send({
-      from: `Proven <${fromValue}>`,
+      from: fromValue,
       to,
       subject,
       html,
@@ -50,7 +65,7 @@ export const sendEmail = async (to: string, subject: string, html: string) => {
 /**
  * Sends a stylized OTP email to the user.
  */
-export const sendOTPEmail = async (to: string, otp: string) => {
+export const sendOTPEmail = async (to: string, otp: string, sender: EmailSender = EmailSender.INFO) => {
   const subject = `🔐 Your Proven Verification Code: ${otp}`;
   const html = `
       <div style="font-family: sans-serif; max-width: 600px; margin: auto; padding: 20px; border: 1px solid #eee; border-radius: 10px;">
@@ -67,13 +82,13 @@ export const sendOTPEmail = async (to: string, otp: string) => {
         </p>
       </div>
     `;
-  return await sendEmail(to, subject, html);
+  return await sendEmail(to, subject, html, sender);
 };
 
 /**
  * Sends a stylized Meeting Invitation email to the user.
  */
-export const sendMeetingEmail = async (to: string, meetingTitle: string, startTime: Date, meetingLink: string) => {
+export const sendMeetingEmail = async (to: string, meetingTitle: string, startTime: Date, meetingLink: string, sender: EmailSender = EmailSender.SUPPORT) => {
   const dateStr = startTime.toLocaleString('en-US', { 
     weekday: 'long', 
     year: 'numeric', 
@@ -102,22 +117,22 @@ export const sendMeetingEmail = async (to: string, meetingTitle: string, startTi
             Duration: 30-45 minutes
           </div>
         </div>
-
+ 
         <div style="text-align: center;">
           <a href="${meetingLink}" style="display: inline-block; background-color: #FF6B00; color: #ffffff; padding: 14px 28px; border-radius: 10px; font-weight: 700; text-decoration: none; font-size: 14px; transition: background-color 0.2s;">
             Join Google Meet
           </a>
         </div>
-
+ 
         <p style="color: #475569; font-size: 13px; line-height: 1.6; margin-top: 25px; text-align: center;">
           Please join on time to ensure we cover all project objectives. If you need to reschedule, please contact the administrator in the chat.
         </p>
-
+ 
         <hr style="border: 0; border-top: 1px solid #f1f1f1; margin: 30px 0;" />
         <p style="font-size: 11px; color: #94A3B8; text-align: center; font-weight: 600; text-transform: uppercase; letter-spacing: 1px;">
           Powered by Proven Platform
         </p>
       </div>
     `;
-  return await sendEmail(to, subject, html);
+  return await sendEmail(to, subject, html, sender);
 };

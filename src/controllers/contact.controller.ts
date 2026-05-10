@@ -1,6 +1,6 @@
 import type { Request, Response } from 'express';
 import { asyncHandler, AppError } from '../middleware/error.middleware.js';
-import { sendEmail } from '../utils/email.js';
+import { sendEmail, EmailSender } from '../utils/email.js';
 import { z } from 'zod';
 
 const contactSchema = z.object({
@@ -56,11 +56,35 @@ export const handleContactForm = asyncHandler(async (req: Request, res: Response
 
 
 
-  const success = await sendEmail(adminEmail, `[ProVen Inquiry]: ${subject}`, html);
+  const success = await sendEmail(adminEmail, `[ProVen Inquiry]: ${subject}`, html, EmailSender.INFO);
 
   if (!success) {
     throw new AppError('Failed to send inquiry. Please try again later or contact us directly.', 500);
   }
+
+  // Send "Thank You" confirmation to the user
+  await sendEmail(
+    email,
+    `ProVen | Inquiry Received: ${subject}`,
+    `
+    <div style="font-family: sans-serif; color: #1e293b; max-width: 600px; margin: auto; border: 1px solid #e2e8f0; border-radius: 12px; padding: 32px;">
+        <h2 style="color: #0f172a; margin-bottom: 24px;">Message Received</h2>
+        <p style="font-size: 16px; color: #334155; line-height: 1.6;">Hello <strong>${name}</strong>,<br><br>Thank you for reaching out to ProVen. We have received your inquiry regarding "<strong>${subject}</strong>" and our team is currently reviewing your message.</p>
+        
+        <div style="background-color: #f8fafc; border: 1px solid #e2e8f0; padding: 20px; border-radius: 12px; margin: 24px 0;">
+            <p style="font-size: 12px; color: #94a3b8; text-transform: uppercase; font-weight: 800; margin-bottom: 8px;">Your Message Reference</p>
+            <p style="font-size: 14px; color: #64748b; font-style: italic;">"${message.substring(0, 100)}${message.length > 100 ? '...' : ''}"</p>
+        </div>
+
+        <p style="font-size: 14px; color: #64748b;">You can expect a response within 24-48 business hours.</p>
+        
+        <div style="margin-top: 32px; border-top: 1px solid #e2e8f0; padding-top: 24px;">
+            <p style="font-size: 12px; color: #94a3b8; font-weight: 600;">PROVEN EXECUTION INFRASTRUCTURE</p>
+        </div>
+    </div>
+    `,
+    EmailSender.INFO
+  ).catch(err => console.error('[Contact Confirmation] Failed:', err));
 
   res.status(200).json({
     success: true,

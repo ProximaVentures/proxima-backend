@@ -468,6 +468,9 @@ model SprintActivity {
 
 model InvestmentPitch {
   id                String      @id @default(cuid())
+  companyName       String      @default("Untitled Venture")
+  industry          String?
+  stage             String?     @default("Idea")
   problemStatement  String      @db.Text
   proposedSolution  String      @db.Text
   usp               String      @db.Text

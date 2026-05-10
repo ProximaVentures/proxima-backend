@@ -4,7 +4,7 @@ import bcrypt from 'bcryptjs';
 import { asyncHandler, AppError } from '../middleware/error.middleware.js';
 import type { AuthRequest } from '../interfaces/auth.interface.js';
 import prisma from '../utils/prisma.js';
-import { sendOTPEmail } from '../utils/email.js';
+import { sendOTPEmail, sendEmail, EmailSender } from '../utils/email.js';
 import { generateOTP, hashOTP, compareOTP } from '../utils/otp.js';
 import type { RegisterInput, LoginInput, socialLoginSchema } from '../validators/auth.validator.js';
 import { z } from 'zod';
@@ -78,10 +78,33 @@ export const verifyOTP = asyncHandler(async (req: Request, res: Response) => {
     }
 
     // 2. Mark user as verified in Database
-    await prisma.user.update({
+    const user = await prisma.user.update({
         where: { email },
         data: { isVerified: true }
     });
+
+    // 3. Notify Admin of new verified user
+    const adminEmail = process.env.ADMIN_RECEIVE_EMAIL || 'admin@provenworld.com';
+    await sendEmail(
+        adminEmail,
+        `👤 New Verified User: ${user.username}`,
+        `
+        <div style="font-family: sans-serif; max-width: 600px; margin: auto; padding: 32px; border: 1px solid #e2e8f0; border-radius: 24px; background-color: #ffffff;">
+            <h2 style="color: #0f172a; margin-bottom: 24px;">New User Verified</h2>
+            <p style="font-size: 16px; color: #334155;">A new user has successfully verified their account on ProVen.</p>
+            
+            <div style="background-color: #f8fafc; padding: 24px; border-radius: 16px; margin: 24px 0; border: 1px solid #f1f5f9;">
+                <p style="margin: 0 0 12px 0;"><strong>Username:</strong> ${user.username}</p>
+                <p style="margin: 0 0 12px 0;"><strong>Email:</strong> ${user.email}</p>
+                <p style="margin: 0 0 12px 0;"><strong>Role:</strong> ${user.role}</p>
+                <p style="margin: 0;"><strong>ID:</strong> ${user.id}</p>
+            </div>
+
+            <p style="font-size: 14px; color: #64748b;">This user is now ready for onboarding or project submission.</p>
+        </div>
+        `,
+        EmailSender.INFO
+    ).catch(err => console.error('[Admin New User Alert] Failed:', err));
 
     // 3. Cleanup: delete from Redis immediately
     await redis.del(`otp:${email}`);
@@ -256,7 +279,7 @@ export const testEmail = asyncHandler(async (req: Request, res: Response) => {
     if (!email) throw new AppError('Email is required', 400);
 
     // console.log(`[🧪 TEST EMAIL]: Request for ${email}`);
-    const success = await sendOTPEmail(email, '123456');
+    const success = await sendOTPEmail(email, '123456', EmailSender.ADMIN);
 
     if (success) {
         res.status(200).json({ success: true, message: 'Test email sent successfully!' });
