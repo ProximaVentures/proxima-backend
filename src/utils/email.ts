@@ -12,7 +12,12 @@ const getResend = () => {
  * Generic Email Sender via Resend API
  */
 export const sendEmail = async (to: string, subject: string, html: string) => {
-  const fromValue = process.env.EMAIL_FROM || 'onboarding@resend.dev';
+  const fromValue = process.env.EMAIL_FROM;
+  
+  if (!fromValue) {
+    console.error('[🚨 RESEND FAILED]: EMAIL_FROM is missing in .env');
+    return false;
+  }
 
   if (!process.env.RESEND_API_KEY) {
     console.error('[🚨 RESEND FAILED]: RESEND_API_KEY is missing in .env');

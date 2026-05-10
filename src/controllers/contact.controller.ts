@@ -21,7 +21,7 @@ export const handleContactForm = asyncHandler(async (req: Request, res: Response
   }
 
   const { name, email, subject, message } = result.data;
-  const adminEmail = 'fonyuyjudegita@gmail.com';
+  const adminEmail = process.env.ADMIN_RECEIVE_EMAIL || 'info@provenworld.com';
 
   const html = `
     <div style="font-family: 'Inter', sans-serif; max-width: 600px; margin: auto; padding: 40px; border: 1px solid #e2e8f0; border-radius: 24px; background-color: #ffffff;">

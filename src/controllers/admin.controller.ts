@@ -537,16 +537,6 @@ export const getAllUsers = asyncHandler(async (req: Request, res: Response) => {
     // LOGGING FOR VERIFICATION
     if (roleQuery?.toUpperCase() === 'PROFESSIONAL') {
         console.log(`[ADMIN FETCH] Professionals Found: ${total}`);
-        const jude = filteredUsers.find(u => u.email === 'fonyuyjudegita@gmail.com');
-        if (jude) {
-            console.log(`[ADMIN FETCH] Jude Gita IS IN THE LIST. Index: ${filteredUsers.indexOf(jude)}`);
-        } else {
-            console.log(`[ADMIN FETCH] Jude Gita IS MISSING! Data check:`, 
-                allUsers.filter(u => u.email === 'fonyuyjudegita@gmail.com').map(u => ({
-                    role: u.role, roles: u.roles, onboarding: u.profile?.onboardingComplete
-                }))
-            );
-        }
     }
 
     res.status(200).json({
