@@ -357,7 +357,7 @@ export const getAcceptedProjects = asyncHandler(async (req: AuthRequest, res: Re
     const currentUserId = req.user?.id;
     const mappedProjects = projects.map(project => ({
         ...project,
-        isAssigned: project.assignments.some(a => (a.userId === currentUserId) && ['ACTIVE', 'ACCEPTED', 'ASSIGNED'].includes(a.status)),
+        isAssigned: project.assignments.some(a => (a.userId === currentUserId) && a.status === 'ACTIVE'),
         isInterested: project.assignments.some(a => (a.userId === currentUserId) && a.status === 'INTERESTED'),
     }));
 
