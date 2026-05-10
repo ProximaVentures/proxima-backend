@@ -1828,3 +1828,27 @@ export const updateProject = asyncHandler(async (req: AuthRequest, res: Response
         throw error;
     }
 });
+
+/**
+ * Delete Project (Admin)
+ */
+export const deleteProject = asyncHandler(async (req: AuthRequest, res: Response) => {
+    const { id } = req.params as { id: string };
+
+    const existingProject = await prisma.project.findUnique({
+        where: { id }
+    });
+
+    if (!existingProject) {
+        throw new AppError('Project not found', 404);
+    }
+
+    await prisma.project.delete({
+        where: { id }
+    });
+
+    res.status(200).json({
+        success: true,
+        message: 'Project deleted successfully'
+    });
+});

@@ -29,6 +29,7 @@ router.get('/projects/:id', adminController.getProjectById);
 router.get('/projects/:id/interests', adminController.getProjectInterests);
 router.patch('/projects/:id/status', adminController.updateProjectStatus);
 router.patch('/projects/:id', adminController.updateProject);
+router.delete('/projects/:id', adminController.deleteProject);
 router.post('/projects/:id/assign', adminController.assignProfessional);
 // Interests Management
 router.get('/interests', adminController.getAllInterests);
