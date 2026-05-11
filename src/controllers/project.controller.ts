@@ -108,7 +108,8 @@ export const createProject = asyncHandler(async (req: AuthRequest, res: Response
             
             <div style="background-color: #f8fafc; padding: 24px; border-radius: 16px; margin: 24px 0; border: 1px solid #f1f5f9;">
                 <p style="margin: 0 0 12px 0;"><strong>Title:</strong> ${data.title}</p>
-                <p style="margin: 0 0 12px 0;"><strong>Client ID:</strong> ${userId}</p>
+                <p style="margin: 0 0 12px 0;"><strong>Client Name:</strong> ${user.username}</p>
+                <p style="margin: 0 0 12px 0;"><strong>Client Email:</strong> ${user.email}</p>
                 <p style="margin: 0 0 12px 0;"><strong>Timeline:</strong> ${data.timeline}</p>
                 <p style="margin: 0;"><strong>Brief:</strong> ${data.briefUrl ? 'Uploaded' : 'No brief provided'}</p>
             </div>
@@ -187,9 +188,11 @@ export const createInvestmentPitch = asyncHandler(async (req: AuthRequest, res: 
             
             <div style="background-color: #f8fafc; padding: 24px; border-radius: 16px; margin: 24px 0; border: 1px solid #f1f5f9;">
                 <p style="margin: 0 0 12px 0;"><strong>Company:</strong> ${data.companyName}</p>
+                <p style="margin: 0 0 12px 0;"><strong>Client Name:</strong> ${user.username}</p>
+                <p style="margin: 0 0 12px 0;"><strong>Client Email:</strong> ${user.email}</p>
                 <p style="margin: 0 0 12px 0;"><strong>Industry:</strong> ${data.industry}</p>
                 <p style="margin: 0 0 12px 0;"><strong>Stage:</strong> ${data.stage}</p>
-                <p style="margin: 0;"><strong>Client ID:</strong> ${userId}</p>
+                <p style="margin: 0;"><strong>ID:</strong> ${pitch.id}</p>
             </div>
 
             <p style="font-size: 14px; color: #64748b;">Please review the full pitch details in the Admin Dashboard.</p>
