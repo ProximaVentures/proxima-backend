@@ -151,6 +151,7 @@ model User {
   pitches       InvestmentPitch[]
   assignments   ProjectAssignment[]
   notifications Notification[]
+  pushSubscriptions PushSubscription[]
 
   // Project Manager relation
   managedProjects Project[] @relation("managedProjects")
@@ -180,6 +181,7 @@ model Profile {
   vettingStatus   VettingStatus         @default(PENDING)
   onboardingComplete Boolean            @default(false)
   hasSeenRolePrompt Boolean             @default(false)
+  pushNotificationsEnabled Boolean      @default(true)
   
   // Utilize JSONB for extensible, category-specific metadata.
   metadata        Json?                 @default("{}")
@@ -498,6 +500,16 @@ model Notification {
   type      String   // TASK, RESOURCE, MEETING, BRIEFING, DOC, INFO
   link      String?  // Deep link to the project/tab
   isRead    Boolean  @default(false)
+  createdAt DateTime @default(now())
+}
+
+model PushSubscription {
+  id        String   @id @default(cuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  endpoint  String   @unique
+  p256dh    String
+  auth      String
   createdAt DateTime @default(now())
 }
 

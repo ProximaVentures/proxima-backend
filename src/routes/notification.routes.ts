@@ -11,4 +11,10 @@ router.get('/', notificationController.getNotifications);
 router.patch('/:id/read', notificationController.markAsRead);
 router.patch('/read-all', notificationController.markAllAsRead);
 
+// Push Notification Routes
+router.post('/push/subscribe', notificationController.subscribeToPush);
+router.post('/push/unsubscribe', notificationController.unsubscribeFromPush);
+router.post('/push/test', notificationController.testPushNotification);
+router.patch('/push/settings', notificationController.togglePushSettings);
+
 export default router;

@@ -30,7 +30,7 @@ export const updateMe = asyncHandler(async (req: AuthRequest, res: Response) => 
         throw new AppError('User not authenticated', 401);
     }
 
-    const { username, phone, firstName, lastName, jobTitle, city, country, bio, avatarUrl, metadata, preferences, category } = req.body;
+    const { username, phone, firstName, lastName, jobTitle, city, country, bio, avatarUrl, metadata, preferences, category, pushNotificationsEnabled } = req.body;
 
     if (username !== undefined || phone !== undefined) {
         await prisma.user.update({
@@ -42,7 +42,7 @@ export const updateMe = asyncHandler(async (req: AuthRequest, res: Response) => 
         });
     }
 
-    if (firstName !== undefined || lastName !== undefined || jobTitle !== undefined || city !== undefined || country !== undefined || bio !== undefined || avatarUrl !== undefined || metadata !== undefined || preferences !== undefined || category !== undefined) {
+    if (firstName !== undefined || lastName !== undefined || jobTitle !== undefined || city !== undefined || country !== undefined || bio !== undefined || avatarUrl !== undefined || metadata !== undefined || preferences !== undefined || category !== undefined || pushNotificationsEnabled !== undefined) {
         const existingProfile = await prisma.profile.findUnique({
             where: { userId: req.user.id }
         });
@@ -68,6 +68,7 @@ export const updateMe = asyncHandler(async (req: AuthRequest, res: Response) => 
                 category: category !== undefined ? category : undefined,
                 metadata: metadata !== undefined ? mergedMetadata : undefined,
                 preferences: preferences !== undefined ? mergedPreferences : undefined,
+                pushNotificationsEnabled: pushNotificationsEnabled !== undefined ? pushNotificationsEnabled : undefined,
                 onboardingComplete: true // Auto-complete if they are through this flow
             },
             create: {
@@ -82,6 +83,7 @@ export const updateMe = asyncHandler(async (req: AuthRequest, res: Response) => 
                 category: category || null,
                 metadata: metadata || {},
                 preferences: preferences || {},
+                pushNotificationsEnabled: pushNotificationsEnabled !== undefined ? pushNotificationsEnabled : true,
                 onboardingComplete: true
             }
         });
