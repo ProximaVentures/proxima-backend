@@ -5,6 +5,7 @@ import prisma from '../utils/prisma.js';
 import { sendMeetingEmail } from '../utils/email.js';
 import SocketService from '../socket/socket.service.js';
 import { SocketEvents } from '../socket/events.js';
+import { queueNotification } from '../utils/qstash.js';
 
 /**
  * Schedule a new meeting for a conversation
@@ -79,6 +80,22 @@ export const scheduleMeeting = asyncHandler(async (req: AuthRequest, res: Respon
             meeting,
             conversationId
         });
+    }
+
+    // Queue Web Push notifications via QStash
+    const recipientIds = otherParticipants.map((p: any) => p.userId);
+    if (recipientIds.length > 0) {
+        queueNotification({
+            type: 'MEETING_SCHEDULED',
+            messageId: meeting.id,
+            conversationId,
+            senderId: userId,
+            senderName: (meeting.creator as any)?.profile?.firstName || 'Admin',
+            recipientIds,
+            title: 'New Meeting Scheduled 📅',
+            body: `${title} scheduled for ${new Date(startTime).toLocaleString()}`,
+            deepLink: `/dashboard/messages?conversation=${conversationId}`,
+        }).catch(err => console.error('[⚠️ MEETING QUEUE ERROR]:', err));
     }
 
     // Also emit to the conversation room so everyone actively chatting sees it

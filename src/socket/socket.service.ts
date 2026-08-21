@@ -6,6 +6,7 @@ import { SocketEvents } from './events.js';
 import redis from '../utils/redis.js';
 import prisma from '../utils/prisma.js';
 import { MessageType } from '@prisma/client';
+import { queueNotification } from '../utils/qstash.js';
 
 /**
  * SocketService
@@ -222,6 +223,30 @@ class SocketService {
                             isNewForUser: true 
                         });
                     }
+                }
+
+                // G. Queue Web Push Notifications via QStash
+                const otherRecipientIds = participants
+                    .filter(p => p.userId !== userId)
+                    .map(p => p.userId);
+
+                if (otherRecipientIds.length > 0) {
+                    const senderProfile = (message.sender as any)?.profile;
+                    const senderName = senderProfile?.firstName
+                        ? `${senderProfile.firstName} ${senderProfile.lastName || ''}`.trim()
+                        : 'A team member';
+
+                    queueNotification({
+                        type: 'NEW_MESSAGE',
+                        messageId: message.id,
+                        conversationId,
+                        senderId: userId,
+                        senderName,
+                        recipientIds: otherRecipientIds,
+                        title: `New message from ${senderName}`,
+                        body: message.content ? message.content.substring(0, 150) : (message.fileName ? `Sent an attachment: ${message.fileName}` : 'Sent a file'),
+                        deepLink: `/dashboard/messages?conversation=${conversationId}`,
+                    }).catch(err => console.error('[⚠️ NOTIFICATION QUEUE ERROR]:', err));
                 }
 
             } catch (err: any) {
